@@ -1,0 +1,29 @@
+#ifndef DEADLOCK_H_INCLUDED
+#define DEADLOCK_H_INCLUDED
+
+#include <sys/param.h>
+#include <CUnit/Basic.h>
+
+#include "common_utils.h"
+#include "duplicated_logic_allocator.h"
+#include "kernel_structs.h"
+
+void test_deadlock_setup(void);
+void test_deadlock_tear_down(void);
+
+void test_deteccion_y_recuperacion_del_deadlock_1(void);
+void test_deteccion_y_recuperacion_del_deadlock_2(void);
+void test_es_posible_eliminar_columnas_y_filas_nulas_1(void);
+void test_es_posible_eliminar_columnas_y_filas_nulas_2(void);
+void test_es_posible_eliminar_columnas_y_filas_nulas_3(void);
+void test_pcb_create(void);
+void test_sem_create(void);
+void test_un_proceso_al_hacer_un_post_de_un_semaforo_que_no_retenia_sigue_sin_retener_ninguna_instancia(void);
+void test_un_proceso_al_hacer_un_post_deja_de_tener_una_intancia_que_retenia(void);
+void test_un_proceso_no_retiene_una_instancia_del_semaforo_en_caso_de_bloquearse(void);
+void test_un_proceso_retiene_dos_instancias_de_un_semaforo(void);
+void test_un_proceso_retiene_una_instancia_de_un_semaforo_bloqueandose_luego_en_el_mismo(void);
+void test_un_proceso_retiene_una_instancia_de_un_semaforo_pero_se_bloquea_en_otro_semaforo(void);
+void test_un_proceso_retiene_una_instancia_del_semaforo_en_caso_de_no_bloquearse(void);
+
+#endif
