@@ -2,28 +2,26 @@
 
 static uint32_t nextPid;
 
-sem_t gradoMultiprog;
-sem_t despertarMedianoPlazo;
-sem_t suspensionConcluida;
-sem_t hayPCBsParaAgregarAlSistema;
-sem_t transicionarSusReadyAready;
+static sem_t gradoMultiprog;
+static sem_t despertarMedianoPlazo;
+static sem_t suspensionConcluida;
+static sem_t hayPCBsParaAgregarAlSistema;
+static sem_t transicionarSusReadyAready;
 
-pthread_mutex_t mutexDeadlock;
-pthread_mutex_t mutexPid;
+static pthread_mutex_t mutexDeadlock;
+static pthread_mutex_t mutexPid;
 pthread_mutex_t mutexMemSocket;
 
-// colas de planificación
-t_cola_planificacion* pcbsNew;
-t_cola_planificacion* pcbsReady;
-t_cola_planificacion* pcbsBlocked;
-t_cola_planificacion* pcbsSusReady;
-t_cola_planificacion* pcbsSusBlocked;
-t_cola_planificacion* pcbsExit;
-t_cola_planificacion* pcbsExec;
+static t_cola_planificacion* pcbsNew;
+static t_cola_planificacion* pcbsReady;
+static t_cola_planificacion* pcbsBlocked;
+static t_cola_planificacion* pcbsSusReady;
+static t_cola_planificacion* pcbsSusBlocked;
+static t_cola_planificacion* pcbsExit;
+static t_cola_planificacion* pcbsExec;
 
-// recursos del sistema
-t_cola_recursos* semaforosDelSistema;
-t_cola_recursos* dispositivosIODelSistema;
+static t_cola_recursos* semaforosDelSistema;
+static t_cola_recursos* dispositivosIODelSistema;
 
 void iniciar_planificacion(void) {
     nextPid = 1;
@@ -80,16 +78,16 @@ void iniciar_planificacion(void) {
 }
 
 void* iniciar_rutina_deteccion_de_deadlocks(void* _) {
-    log_info(kernelLogger, "Hilo Deadlock: Inicialización de análisis de deadlock exitosa");
+    log_info(kernelLogger, "Deadlock: Inicialización de análisis de deadlock exitosa");
     for(;;) {
-        log_info(kernelLogger, "Hilo Deadlock: Durmiendo por %d milisegundos...", kernelCfg->TIEMPO_DEADLOCK);
+        log_info(kernelLogger, "Deadlock: Durmiendo por %d milisegundos...", kernelCfg->TIEMPO_DEADLOCK);
         intervalo_de_pausa(kernelCfg->TIEMPO_DEADLOCK);
-        log_info(kernelLogger, "Hilo Deadlock: Analizando deadlock...");
+        log_info(kernelLogger, "Deadlock: Analizando deadlock...");
         pthread_mutex_lock(&mutexDeadlock);
-        log_info(kernelLogger, "Hilo Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
+        log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
         detectar_y_recuperarse_del_deadlock(pcbsBlocked, pcbsSusBlocked, semaforosDelSistema, &gradoMultiprog);
         pthread_mutex_unlock(&mutexDeadlock);
-        log_info(kernelLogger, "Hilo Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
+        log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
     }
 }
 
@@ -117,7 +115,7 @@ void* iniciar_corto_plazo(void* _) {
         agregar_pcb_a_cola(pcbQuePasaAExec, pcbsExec);
 
         log_transition("Corto Plazo", "READY", "EXEC", pcbQuePasaAExec->pid);
-        evaluar_suspension();                                   /* Caso posible en donde la cola de planificación ready se quede sin PCBs */
+        evaluar_suspension();                   /* Caso posible en donde la cola de planificación ready se quede sin PCBs */
 
         atender_peticiones_del_carpincho(pcbQuePasaAExec);
     }
@@ -164,16 +162,16 @@ void* iniciar_mediano_plazo(void* _) {
         sem_wait(&despertarMedianoPlazo);
         if(existe_caso_de_suspension()) {
             pthread_mutex_lock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             t_pcb* pcbASuspender = pop_ultimo_de_cola(pcbsBlocked);
             enviar_suspension_de_carpincho_a_memoria(pcbASuspender);
             cambiar_estado_pcb(pcbASuspender, SUSBLOCKED);
             agregar_pcb_a_cola(pcbASuspender, pcbsSusBlocked);
             pthread_mutex_unlock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
             log_info(kernelLogger, "Mediano Plazo: Se libera una instancia de Grado Multiprogramación");
             log_transition("Mediano Plazo", "BLOCKED", "SUSP/BLOCKED", pcbASuspender->pid);
-            sem_post(&gradoMultiprog);                              /* Aumenta el grado de multiprogramción al suspender a un proceso */
+            sem_post(&gradoMultiprog);                  /* Aumenta el grado de multiprogramción al suspender a un proceso */
         }
         sem_post(&suspensionConcluida);
     }
@@ -194,7 +192,7 @@ void* liberar_carpinchos_en_exit(void* _) {
         pcbALiberar->algoritmo_destroy(pcbALiberar);
 
         log_info(kernelLogger, "Largo Plazo: Se libera una instancia de Grado Multiprogramación");
-        sem_post(&gradoMultiprog);                          /* Aumenta el grado de multiprogramación al tener carpincho en EXIT */
+        sem_post(&gradoMultiprog);                  /* Aumenta el grado de multiprogramación al tener carpincho en EXIT */
     }
     pthread_exit(NULL);
 }
@@ -224,15 +222,14 @@ void* iniciar_largo_plazo(void* _) {
         sem_wait(&hayPCBsParaAgregarAlSistema);
         log_info(kernelLogger, "Largo Plazo: Se toma una instancia de PCBs a agregar al sistema");
 
-        /* Este semáforo debería ser posteado cuando un proceso se suspende (baja el grado de multiprogramación), o bien cuando un proceso del sistema pasa a exit */
         sem_wait(&gradoMultiprog);
         log_info(kernelLogger, "Largo Plazo: Se toma una instancia de Grado Multiprogramación");
 
-        if(!list_is_empty(pcbsSusReady->lista)) {   /* Como tiene mayor prioridad los procesos en susp/ready > new, vemos si hay procesos en dicha cola */
+        if(!list_is_empty(pcbsSusReady->lista)) {
             sem_post(&transicionarSusReadyAready);
-        } else {                                    /* En caso de que no haya procesos en susp/ready, seguramente hay en new */
+        } else {
             t_pcb* pcbQuePasaAReady = get_and_remove_primer_pcb_de_cola(pcbsNew);
-            pcbQuePasaAReady->algoritmo_init(pcbQuePasaAReady); /* Solamente inicializamos el algoritmo cuando provenga de NEW (pues si viene de SUSREADY quiere decir que ya estuvo inicializado antes) */
+            pcbQuePasaAReady->algoritmo_init(pcbQuePasaAReady);
             log_info(kernelLogger, "Largo Plazo: Incialización de información del algoritmo correcta");
 
             cambiar_estado_pcb(pcbQuePasaAReady, READY);
@@ -268,8 +265,8 @@ void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
         log_info(kernelLogger, "Kernel: Carpincho ID %d establece conexión", pcb->pid);
         log_info(kernelLogger, "Kernel: Creación PCB Carpincho ID %d exitosa", pcb->pid);
 
-        evaluar_suspension();                       /* Caso posible en donde la cola de planificación New tenga al menos 1 PCB */
-        sem_post(&hayPCBsParaAgregarAlSistema);     /* Ahora tanto NEW como SUSREADY son parte del mismo conjunto: "el conjunto a pasar a READY" */
+        evaluar_suspension();                   /* Caso posible en donde la cola de planificación New tenga al menos 1 PCB */
+        sem_post(&hayPCBsParaAgregarAlSistema);
 
         buffer_destroy(buffer);
     }
@@ -499,7 +496,6 @@ t_recurso_sem* recurso_sem_create(char* nombre, int32_t valor) {
     return recursoSem;
 }
 
-/* Es el puntero a la función de cada dispositivo IO (hilo se encarga de ejecutar ráfagas IO del primer PCB en la cola) */
 void* iniciar_rutina_ejecucion_dispositivos_io(void* args) {
     t_recurso_io* recursoIO = (t_recurso_io*) args;
     for(;;) {
@@ -515,17 +511,17 @@ void* iniciar_rutina_ejecucion_dispositivos_io(void* args) {
 
         if(primerPCB->status == SUSBLOCKED) {
             pthread_mutex_lock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             pasar_de_susblocked_a_susready(primerPCB);
             pthread_mutex_unlock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
             log_transition(nombreDispositivo, "SUSP/BLOCKED", "SUSP/READY", primerPCB->pid);
         } else if (primerPCB->status == BLOCKED) {
             pthread_mutex_lock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             pasar_de_blocked_a_ready(primerPCB);
             pthread_mutex_unlock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
             log_transition(nombreDispositivo, "BLOCKED", "READY", primerPCB->pid);
         }
         free(nombreDispositivo);
@@ -562,11 +558,11 @@ void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
         remover_pcb_de_cola(pcb, pcbsExec);
 
         pthread_mutex_lock(&mutexDeadlock);
-        log_info(kernelLogger, "Hilo Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
+        log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
         cambiar_estado_pcb(pcb, BLOCKED);
         agregar_pcb_a_cola(pcb, pcbsBlocked);
         pthread_mutex_unlock(&mutexDeadlock);
-        log_info(kernelLogger, "Hilo Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
+        log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
 
         log_transition(nombreDispositivo, "EXEC", "BLOCKED", pcb->pid);
         log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, callIO->mensaje, pcb->pid);
@@ -576,7 +572,7 @@ void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
         queue_push(recursoIO->colaPCBs, pcb);
         pthread_mutex_unlock(&(recursoIO->mutexColaPCBs));
 
-        evaluar_suspension();                       /* Caso posible en donde la cola de planificación Blocked tenga al menos 1 PCB */
+        evaluar_suspension();                   /* Caso posible en donde la cola de planificación Blocked tenga al menos 1 PCB */
 
         sem_post(&(recursoIO->instanciasDisponibles));
     } else {
@@ -584,6 +580,7 @@ void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
     }
 }
 
+///////////////////////////// SEMÁFOROS /////////////////////////////
 void encolar_pcb_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     pthread_mutex_lock(&(sem->mutexColaPCBs));
     queue_push(sem->colaPCBs, pcb);
@@ -593,9 +590,7 @@ void encolar_pcb_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
 t_pcb* pop_primer_pcb_de_cola_semaforo(t_recurso_sem* sem) {
     t_pcb* primerPCB = NULL;
     pthread_mutex_lock(&(sem->mutexColaPCBs));
-    // if(!queue_is_empty(sem->colaPCBs)) {
-        primerPCB = queue_pop(sem->colaPCBs);
-    // }
+    primerPCB = queue_pop(sem->colaPCBs);
     pthread_mutex_unlock(&(sem->mutexColaPCBs));
     return primerPCB;
 }
@@ -631,7 +626,7 @@ bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
 
         log_transition("Kernel", "EXEC", "BLOCKED", pcbWait->pid);
 
-        evaluar_suspension();                       /* Caso posible en donde la cola de planificación Blocked tenga al menos 1 PCB */
+        evaluar_suspension();                   /* Caso posible en donde la cola de planificación Blocked tenga al menos 1 PCB */
     } else {
         retener_una_instancia_del_semaforo(pcbWait, sem);
     }
@@ -667,9 +662,9 @@ t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
     if(hayPCBsBloqueados) {
         primerPCB = pop_primer_pcb_de_cola_semaforo(sem);
         if(primerPCB != NULL) {
-            if(primerPCB->status == SUSBLOCKED) {       /* Si viene de SUSBLOCKED quiere decir que ya lo habíamos eliminado de la cola general de bloqueados al momento de suspenderlo */
+            if(primerPCB->status == SUSBLOCKED) {       /* Viene de SUSBLOCKED => ya lo habíamos eliminado de la cola general de bloqueados al momento de suspenderlo */
                 pasar_de_susblocked_a_susready(primerPCB);
-            } else if(primerPCB->status == BLOCKED) {   /* Si viene de BLOCKED hay que eliminarlo de la lista general de bloqueados */
+            } else if(primerPCB->status == BLOCKED) {   /* Viene de BLOCKED => hay que eliminarlo de la lista general de bloqueados */
                 pasar_de_blocked_a_ready(primerPCB);
             }
             primerPCB->deadlockInfo->esperaEnSemaforo = NULL;
@@ -686,7 +681,7 @@ void kernel_sem_init(t_tarea_sem* unaTareaDeSem, t_pcb* pcb) {
     pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
 }
 
-/* Issue (#62): https://github.com/sisoputnfrba/tp-2021-2c-La-Cosa-Operativa/issues/62 */
+///////////////////////////// REALIZACIÓN DE PETICIONES /////////////////////////////
 bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
     uint32_t socket = *(pcb->socket);
 
@@ -724,11 +719,8 @@ bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
 
         if(sem != NULL) {
             log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Valor semáforo: %d", pcb->pid, sem->valorActual);
-            // pthread_mutex_lock(&mutexDeadlock);
-            // log_info(kernelLogger, "Hilo Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             esBloqueante = kernel_sem_wait(sem, pcb);
-            // pthread_mutex_unlock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
             if(esBloqueante) {
                 log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Se bloquea en semáforo \"%s\". Valor semáforo: %d", pcb->pid, unaTareaSem->nombre, sem->valorActual);
             } else {
@@ -750,10 +742,10 @@ bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
         if(sem != NULL) {
             log_info(kernelLogger, "SEM_POST <Carpincho %d>: Valor semáforo: %d", pcb->pid, sem->valorActual);
             pthread_mutex_lock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             pcbDesbloqueado = kernel_sem_post(sem, pcb);
             pthread_mutex_unlock(&mutexDeadlock);
-            log_info(kernelLogger, "Hilo Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
+            log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
             if(pcbDesbloqueado != NULL) {
                 log_info(kernelLogger, "SEM_POST <Carpincho %d>: Se desbloquea Carpincho %d en semáforo \"%s\". Valor semáforo: %d", pcb->pid, pcbDesbloqueado->pid, sem->nombre, sem->valorActual);
             } else {

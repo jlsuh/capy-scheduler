@@ -18,11 +18,6 @@ void buffer_pack(t_buffer* buffer, void* streamToAdd, int size) {
     buffer->size += size;
 }
 
-/**
- * 1. buffer_create() inicializa el stream con valor NULL
- * 2. al usar memcpy/3 o memmove/3, usa el valor nulo como origen <- y acá rompe
- * No podemos copiar desde un espacio de memoria no-reservada a un espacio de memoria reservada
- */
 void buffer_unpack(t_buffer* buffer, void* dest, int size) {
     memcpy(dest, buffer->stream, size);
     buffer->size -= size;

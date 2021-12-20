@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
             send_empty_buffer(OK_CONTINUE, kernelCfg->MEMORIA_SOCKET);
             log_info(kernelLogger, "Kernel: Memoria establece conexión con Kernel en socket ID %d", kernelCfg->MEMORIA_SOCKET);
         } else {
-            send_empty_buffer(FAIL, kernelCfg->MEMORIA_SOCKET); /* En este caso kernelCfg->MEMORIA_SOCKET sería una entidad que se conectó pero que en realidad no es Memoria */
+            send_empty_buffer(FAIL, kernelCfg->MEMORIA_SOCKET); /* kernelCfg->MEMORIA_SOCKET es entidad conectante pero no es Memoria */
             log_error(kernelLogger, "Kernel: Error al intentar establecer conexión con Módulo Memoria");
             liberar_modulo_kernel(kernelLogger, kernelCfg);
             exit(0);

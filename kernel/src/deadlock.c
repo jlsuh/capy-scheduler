@@ -1,8 +1,5 @@
 #include "deadlock.h"
 
-/* static void print_alloced_resources_matrix(t_list* pcbsDeadlock, t_list* semsDeadlock);
-static void print_awaiting_resources_matrix(t_list* pcbsDeadlock, t_list* semsDeadlock); */
-
 bool espera_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     if(espera_algun_semaforo(pcb) && strcmp(pcb->deadlockInfo->esperaEnSemaforo->nombre, sem->nombre) == 0) {
         return true;
@@ -115,9 +112,9 @@ void finalizar_carpincho_en_deadlock(t_pcb* pcb) {
     } else if(pcb->status == SUSBLOCKED) {
         prevStatus = string_from_format("SUSP/BLOCKED");
     }
-    log_info(kernelLogger, "Hilo Deadlock: Finalización abrupta del PCB ID %d por resolución de deadlocks", pcb->pid);
+    log_info(kernelLogger, "Deadlock: Finalización abrupta del PCB ID %d por resolución de deadlocks", pcb->pid);
     send_empty_buffer(DEADLOCK_END, *(pcb->socket));
-    log_transition("Hilo Deadlock", prevStatus, "EXIT", pcb->pid);
+    log_transition("Deadlock", prevStatus, "EXIT", pcb->pid);
     pcb->algoritmo_destroy(pcb);
     free(prevStatus);
 }
@@ -166,13 +163,9 @@ void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_co
         list_add_all(semsEnDeadlock, semaforosDelSistema->listaRecursos);
         bool existeDeadlock = true;
         while(existeDeadlock) {
-            /* print_awaiting_resources_matrix(pcbsEnDeadlock, semsEnDeadlock);
-            print_alloced_resources_matrix(pcbsEnDeadlock, semsEnDeadlock); */
             reducir_matrices_de_deteccion(pcbsEnDeadlock, semsEnDeadlock);
             existeDeadlock = matrices_son_nulas(pcbsEnDeadlock, semsEnDeadlock);
             if(existeDeadlock) {
-                /* print_awaiting_resources_matrix(pcbsEnDeadlock, semsEnDeadlock);
-                print_alloced_resources_matrix(pcbsEnDeadlock, semsEnDeadlock); */
                 recuperarse_del_deadlock(
                     pcbsEnDeadlock,
                     semsEnDeadlock,
@@ -201,39 +194,3 @@ void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_co
     list_destroy(pcbsDeadlockBlocked);
     list_destroy(pcbsDeadlockSusBlocked);
 }
-
-/* static void print_alloced_resources_matrix(t_list* pcbsDeadlock, t_list* semsDeadlock) {
-    printf("\nMatriz de recursos asignados\n");
-    if(!list_is_empty(pcbsDeadlock) && !list_is_empty(semsDeadlock)) {
-        for(int i = 0; i < list_size(pcbsDeadlock); i++) {
-            t_pcb* pcb = list_get(pcbsDeadlock, i);
-            for(int j = 0; j < list_size(semsDeadlock); j++) {
-                t_recurso_sem* sem = list_get(semsDeadlock, j);
-                t_dictionary* dict = pcb->deadlockInfo->semaforosQueRetiene;
-                if(dictionary_has_key(dict, sem->nombre)) {
-                    printf("%d ", *(int*) dictionary_get(dict, sem->nombre));
-                } else {
-                    printf("0 ");
-                }
-            }
-            printf("\n");
-        }
-    }
-}
-static void print_awaiting_resources_matrix(t_list* pcbsDeadlock, t_list* semsDeadlock) {
-    printf("\nMatriz de peticiones pendientes\n");
-    if(!list_is_empty(pcbsDeadlock) && !list_is_empty(semsDeadlock)) {
-        for(int i = 0; i < list_size(pcbsDeadlock); i++) {
-            t_pcb* pcb = list_get(pcbsDeadlock, i);
-            for(int j = 0; j < list_size(semsDeadlock); j++) {
-                t_recurso_sem* sem = list_get(semsDeadlock, j);
-                if(espera_al_semaforo(pcb, sem)) {
-                    printf("1 ");
-                } else {
-                    printf("0 ");
-                }
-            }
-            printf("\n");
-        }
-    }
-} */
