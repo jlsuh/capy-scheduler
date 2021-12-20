@@ -2,7 +2,7 @@ PROJECTS=kernel use-case-deadlock use-case-scheduling use-case-suspension tests
 LIBS=static matelib
 
 all: $(PROJECTS)
-	@echo "Makefile para rama \"$(GIT_BRANCH)\". Se compilaron \"$(PROJECTS)\""
+	@echo "Se compilaron \"$(PROJECTS)\""
 
 $(PROJECTS): $(LIBS)
 	$(MAKE) --no-print-directory -C $@ all
@@ -10,16 +10,16 @@ $(PROJECTS): $(LIBS)
 $(LIBS):
 	$(MAKE) --no-print-directory -C $@ all
 
-clean: cleanvalgrindfiles cleanlogs
+clean: clean-vgcores clean-logs
 	$(foreach P, $(LIBS) $(PROJECTS), $(MAKE) --no-print-directory -C $P clean;)
 
-cleanvalgrindfiles:
+clean-vgcores:
 	$(RM) **/vgcore.*
 
-cleanlogs:
+clean-logs:
 	$(RM) **/**/*.log
 
 release:
 	$(foreach P, $(LIBS) $(PROJECTS), $(MAKE) --no-print-directory -C $P release;)
 
-.PHONY: all $(PROJECTS) $(LIBS) clean release cleanvalgrindfiles cleanlogs
+.PHONY: all $(PROJECTS) $(LIBS) clean release clean-vgcores clean-logs
