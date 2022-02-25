@@ -1,33 +1,99 @@
 #include "kernel_config.h"
 
-t_kernel_config* kernel_cfg_create(void) {
-    t_kernel_config* newKernelCfg = malloc(sizeof(t_kernel_config));
-    newKernelCfg->MEMORIA_SOCKET = 0;
-    newKernelCfg->IP_MEMORIA = NULL;
-    newKernelCfg->PUERTO_MEMORIA = NULL;
-    newKernelCfg->ALGORITMO_PLANIFICACION = NULL;
-    newKernelCfg->ESTIMACION_INICIAL = 0;
-    newKernelCfg->ALFA = 0;
-    newKernelCfg->DISPOSITIVOS_IO = NULL;
-    newKernelCfg->DURACIONES_IO = NULL;
-    newKernelCfg->GRADO_MULTIPROGRAMACION = 0;
-    newKernelCfg->GRADO_MULTIPROCESAMIENTO = 0;
-    newKernelCfg->TIEMPO_DEADLOCK = 0;
-    return newKernelCfg;
+#include <commons/config.h>
+#include <commons/log.h>
+#include <commons/string.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "module_config.h"
+
+#define KERNEL_CONFIG_PATH "cfg/kernel_config.cfg"
+
+struct t_kernel_config {
+    int32_t MEMORIA_SOCKET;
+    char* IP_MEMORIA;
+    char* PUERTO_MEMORIA;
+    char* ALGORITMO_PLANIFICACION;
+    double ESTIMACION_INICIAL;
+    double ALFA;
+    char** DISPOSITIVOS_IO;
+    char** DURACIONES_IO;
+    uint16_t GRADO_MULTIPROGRAMACION;
+    uint16_t GRADO_MULTIPROCESAMIENTO;
+    uint16_t TIEMPO_DEADLOCK;
+};
+
+static void __kernel_config_initializer(void* moduleConfig, t_config* tempCfg) {
+    t_kernel_config* kernelConfig = (t_kernel_config*)moduleConfig;
+    const int MILISECS_TO_SECS = 1000;
+    kernelConfig->IP_MEMORIA = strdup(config_get_string_value(tempCfg, "IP_MEMORIA"));
+    kernelConfig->PUERTO_MEMORIA = strdup(config_get_string_value(tempCfg, "PUERTO_MEMORIA"));
+    kernelConfig->ALGORITMO_PLANIFICACION = strdup(config_get_string_value(tempCfg, "ALGORITMO_PLANIFICACION"));
+    kernelConfig->ESTIMACION_INICIAL = config_get_double_value(tempCfg, "ESTIMACION_INICIAL") / MILISECS_TO_SECS;
+    kernelConfig->ALFA = config_get_double_value(tempCfg, "ALFA");
+    kernelConfig->DISPOSITIVOS_IO = config_get_array_value(tempCfg, "DISPOSITIVOS_IO");
+    kernelConfig->DURACIONES_IO = config_get_array_value(tempCfg, "DURACIONES_IO");
+    kernelConfig->GRADO_MULTIPROGRAMACION = config_get_int_value(tempCfg, "GRADO_MULTIPROGRAMACION");
+    kernelConfig->GRADO_MULTIPROCESAMIENTO = config_get_int_value(tempCfg, "GRADO_MULTIPROCESAMIENTO");
+    kernelConfig->TIEMPO_DEADLOCK = config_get_int_value(tempCfg, "TIEMPO_DEADLOCK");
+    kernelConfig->MEMORIA_SOCKET = 0;
 }
 
-void kernel_config_initialize(void* kernelCfg, t_config* config) {
-    t_kernel_config* cfg = (t_kernel_config*) kernelCfg;
-    cfg->IP_MEMORIA = strdup(config_get_string_value(config, "IP_MEMORIA"));
-    cfg->PUERTO_MEMORIA = strdup(config_get_string_value(config, "PUERTO_MEMORIA"));
-    cfg->ALGORITMO_PLANIFICACION = strdup(config_get_string_value(config, "ALGORITMO_PLANIFICACION"));
-    cfg->ESTIMACION_INICIAL = config_get_double_value(config, "ESTIMACION_INICIAL") / 1000;
-    cfg->ALFA = config_get_double_value(config, "ALFA");
-    cfg->DISPOSITIVOS_IO = config_get_array_value(config, "DISPOSITIVOS_IO");
-    cfg->DURACIONES_IO = config_get_array_value(config, "DURACIONES_IO");
-    cfg->GRADO_MULTIPROGRAMACION = config_get_int_value(config, "GRADO_MULTIPROGRAMACION");
-    cfg->GRADO_MULTIPROCESAMIENTO = config_get_int_value(config, "GRADO_MULTIPROCESAMIENTO");
-    cfg->TIEMPO_DEADLOCK = config_get_int_value(config, "TIEMPO_DEADLOCK");
+t_kernel_config* kernel_config_create(void) {
+    t_kernel_config* self = malloc(sizeof(*self));
+    config_init(self, KERNEL_CONFIG_PATH, kernelLogger, __kernel_config_initializer);
+    return self;
+}
+
+void kernel_config_set_mem_socket(t_kernel_config* self, int32_t socket) {
+    self->MEMORIA_SOCKET = socket;
+}
+
+char* kernel_config_get_mem_ip(t_kernel_config* self) {
+    return self->IP_MEMORIA;
+}
+
+char* kernel_config_get_mem_port(t_kernel_config* self) {
+    return self->PUERTO_MEMORIA;
+}
+
+char const* kernel_config_get_algoritmo_planificacion(t_kernel_config* self) {
+    return self->ALGORITMO_PLANIFICACION;
+}
+
+char** kernel_config_get_duracionesIO(t_kernel_config* self) {
+    return self->DURACIONES_IO;
+}
+
+char** kernel_config_get_dispositivosIO(t_kernel_config* self) {
+    return self->DISPOSITIVOS_IO;
+}
+
+double kernel_config_get_est_inicial(t_kernel_config* self) {
+    return self->ESTIMACION_INICIAL;
+}
+
+double kernel_config_get_alfa(t_kernel_config* self) {
+    return self->ALFA;
+}
+
+int32_t kernel_config_get_mem_socket(t_kernel_config* self) {
+    return self->MEMORIA_SOCKET;
+}
+
+uint16_t kernel_config_get_grado_multiprog(t_kernel_config* self) {
+    return self->GRADO_MULTIPROGRAMACION;
+}
+
+uint16_t kernel_config_get_grado_multiproc(t_kernel_config* self) {
+    return self->GRADO_MULTIPROCESAMIENTO;
+}
+
+uint16_t kernel_config_get_tiempo_deadlock(t_kernel_config* self) {
+    return self->TIEMPO_DEADLOCK;
 }
 
 void liberar_modulo_kernel(t_log* kernelLogger, t_kernel_config* kernelCfg) {

@@ -11,7 +11,6 @@
 #include "scheduler.h"
 #include "stream.h"
 
-#define KERNEL_CFG_PATH "cfg/kernel_config.cfg"
 #define KERNEL_LOG_DEST "bin/kernel.log"
 #define KERNEL_MODULE_NAME "Kernel"
 

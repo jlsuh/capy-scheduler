@@ -1,19 +1,5 @@
 #include "common_utils.h"
 
-///////////////////////////// CONFIGS /////////////////////////////
-int cargar_configuracion(const char* nombreModulo, void* moduleCfg, char* configPath, t_log* logger,
-                            void (*cargar_miembros)(void* cfg, t_config* localCfg)) {
-    t_config* localCfg = config_create(configPath);
-    if(localCfg == NULL) {
-        log_error(logger, "No se encontró ", configPath);
-        return EXIT_FAILURE;
-    }
-    cargar_miembros(moduleCfg, localCfg);
-    log_info(logger, "%s: Inicialización de campos correcta", nombreModulo);
-    config_destroy(localCfg);
-    return EXIT_SUCCESS;
-}
-
 ///////////////////////////// COMMONS - Funciones Personalizadas /////////////////////////////
 void* list_find2(t_list *self, bool(*condition)(void*,void*), void* data) {
     t_link_element *element, *newElement = list_create_element(data);
@@ -28,7 +14,7 @@ void* list_find2(t_list *self, bool(*condition)(void*,void*), void* data) {
 }
 
 t_link_element* list_create_element(void* data) {
-	t_link_element* element = malloc(sizeof(t_link_element));
+	t_link_element* element = malloc(sizeof(*element));
 	element->data = data;
 	element->next = NULL;
 	return element;

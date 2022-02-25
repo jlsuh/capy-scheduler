@@ -81,9 +81,9 @@ void free_all()
 
 void init_sems()
 {
-    va_el_2 = malloc(sizeof(sem_t));
+    va_el_2 = malloc(sizeof(*va_el_2));
     sem_init(va_el_2, 1, 0);
-    va_el_3 = malloc(sizeof(sem_t));
+    va_el_3 = malloc(sizeof(*va_el_2));
     sem_init(va_el_3, 1, 0);
 }
 

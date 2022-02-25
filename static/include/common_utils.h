@@ -10,10 +10,6 @@
 
 #include "kernel_structs.h"
 
-///////////////////////////// CONFIGS /////////////////////////////
-int cargar_configuracion(const char *nombreModulo, void *moduleCfg, char *configPath, t_log *logger,
-                         void (*cargar_miembros)(void *cfg, t_config *localCfg));
-
 ///////////////////////////// COMMONS - Funciones Personalizadas /////////////////////////////
 int list_get_index(t_list *list, bool (*cutting_condition)(void *, void *), void *target);
 t_link_element *list_create_element(void *data);

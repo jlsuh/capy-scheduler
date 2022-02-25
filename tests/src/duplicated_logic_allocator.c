@@ -37,7 +37,7 @@ t_pcb* elegir_en_base_a_sjf(t_list* lista) {
 }
 
 t_pcb* pcb_create(uint32_t* pid, const char* algoritmo) {
-    t_pcb* self = malloc(sizeof(t_pcb));
+    t_pcb* self = malloc(sizeof(*self));
     self->socket = pid;
     self->status = NEW;
     self->sjf = NULL;
@@ -51,7 +51,7 @@ t_pcb* pcb_create(uint32_t* pid, const char* algoritmo) {
         self->algoritmo_destroy = hrrn_destroy;
         self->algoritmo_update_next_est_info = hrrn_actualizar_info_para_siguiente_estimacion;
     }
-    self->deadlockInfo = malloc(sizeof(t_deadlock));
+    self->deadlockInfo = malloc(sizeof(*(self->deadlockInfo)));
     self->deadlockInfo->esperaEnSemaforo = NULL;
     self->deadlockInfo->semaforosQueRetiene = dictionary_create();
     pthread_mutex_init(&(self->deadlockInfo->mutexDict), NULL);
@@ -74,13 +74,13 @@ void hrrn_destroy(t_pcb* pcb) {
 }
 
 void inicializar_hrrn(t_pcb* pcb) {
-    pcb->hrrn = malloc(sizeof(t_hrrn));
+    pcb->hrrn = malloc(sizeof(*(pcb->hrrn)));
     pcb->hrrn->s = media_exponencial(0, ESTIMACION_INICIAL);
     pcb->hrrn->w = clock();
 }
 
 void inicializar_sjf(t_pcb* pcb) {
-    pcb->sjf = malloc(sizeof(t_sjf));
+    pcb->sjf = malloc(sizeof(*(pcb->sjf)));
     sjf_actualizar_estimacion_actual(pcb, 0, ESTIMACION_INICIAL);
 }
 
@@ -106,7 +106,7 @@ void sjf_destroy(t_pcb* pcb) {
 }
 
 t_recurso_sem* recurso_sem_create(char* nombre, int32_t valor) {
-    t_recurso_sem* recursoSem = malloc(sizeof(t_recurso_sem));
+    t_recurso_sem* recursoSem = malloc(sizeof(*recursoSem));
     recursoSem->colaPCBs = queue_create();
     recursoSem->nombre = strdup(nombre);
     recursoSem->valorInicial = valor;
@@ -162,7 +162,7 @@ void retener_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
         valorActual = (int32_t*) dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
         (*valorActual)++;
     } else {
-        valorActual = malloc(sizeof(int32_t));
+        valorActual = malloc(sizeof(*valorActual));
         *valorActual = 1;
     }
     dictionary_put(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre, valorActual);
@@ -177,7 +177,7 @@ void recurso_sem_destroy(t_recurso_sem* unSemaforo) {
 }
 
 t_cola_recursos* cola_recursos_create(void) {
-    t_cola_recursos* colaRecursos = malloc(sizeof(t_cola_recursos));
+    t_cola_recursos* colaRecursos = malloc(sizeof(*colaRecursos));
     colaRecursos->listaRecursos = list_create();
     pthread_mutex_init(&(colaRecursos->mutexRecursos), NULL);
     return colaRecursos;

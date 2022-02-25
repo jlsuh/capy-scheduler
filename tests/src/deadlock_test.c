@@ -34,12 +34,12 @@ static bool retiene_instancias_del_semaforo(t_pcb* pcb, int32_t instanciasReteni
 
 // @Before
 void test_deadlock_setup(void) {
-    pid1 = malloc(sizeof(uint32_t));
-    pid2 = malloc(sizeof(uint32_t));
-    pid3 = malloc(sizeof(uint32_t));
-    pid4 = malloc(sizeof(uint32_t));
-    pid5 = malloc(sizeof(uint32_t));
-    pid6 = malloc(sizeof(uint32_t));
+    pid1 = malloc(sizeof(*pid1));
+    pid2 = malloc(sizeof(*pid2));
+    pid3 = malloc(sizeof(*pid3));
+    pid4 = malloc(sizeof(*pid4));
+    pid5 = malloc(sizeof(*pid5));
+    pid6 = malloc(sizeof(*pid6));
 
     *pid1 = 1;
     *pid2 = 2;

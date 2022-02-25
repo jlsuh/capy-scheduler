@@ -61,9 +61,9 @@ void test_dictionary(void) {
 }
 
 void test_list_get_index(void) {
-    uint32_t* pid1 = malloc(sizeof(uint32_t));
-    uint32_t* pid2 = malloc(sizeof(uint32_t));
-    uint32_t* pid3 = malloc(sizeof(uint32_t));
+    uint32_t* pid1 = malloc(sizeof(*pid1));
+    uint32_t* pid2 = malloc(sizeof(*pid2));
+    uint32_t* pid3 = malloc(sizeof(*pid3));
 
     *pid1 = 1;
     *pid2 = 2;
@@ -93,7 +93,7 @@ void test_list_get_index(void) {
 
 void test_eliminar_un_elemento_de_la_lista_de_una_queue(void) {
     t_queue* queue = queue_create();
-    uint32_t* pid1 = malloc(sizeof(uint32_t));
+    uint32_t* pid1 = malloc(sizeof(*pid1));
     *pid1 = 1;
     t_pcb* pcb1 = pcb_create(pid1, "SJF");
 

@@ -1,7 +1,9 @@
 #include "stream.h"
 
 void stream_send(int destSocket, void* toSend, uint32_t bufferSize) {
-    send(destSocket, toSend, /*opCode:*/sizeof(uint32_t) + /*size:*/sizeof(uint32_t) + /*actualSize:*/bufferSize, 0);
+    uint32_t opCode = 0;
+    uint32_t size = 0;
+    send(destSocket, toSend, sizeof(opCode) + sizeof(size) + bufferSize, 0);
 }
 
 void buffer_send(t_buffer* buffer, uint32_t opCodeTarea, int socketConexion) {

@@ -19,11 +19,11 @@ void test_sjf_setup(void) {
     ESTIMACION_INICIAL = 3;
     ALFA = 0.5;
 
-    ID1 = malloc(sizeof(uint32_t));
-    ID2 = malloc(sizeof(uint32_t));
-    ID3 = malloc(sizeof(uint32_t));
-    ID4 = malloc(sizeof(uint32_t));
-    ID5 = malloc(sizeof(uint32_t));
+    ID1 = malloc(sizeof(*ID1));
+    ID2 = malloc(sizeof(*ID2));
+    ID3 = malloc(sizeof(*ID3));
+    ID4 = malloc(sizeof(*ID4));
+    ID5 = malloc(sizeof(*ID5));
 
     *ID1 = 1;
     *ID2 = 2;

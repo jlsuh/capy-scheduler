@@ -1,34 +1,27 @@
 #ifndef KERNEL_CONFIG_H_INCLUDED
 #define KERNEL_CONFIG_H_INCLUDED
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <commons/config.h>
 #include <commons/log.h>
-#include <commons/string.h>
+#include <stdint.h>
 
-typedef struct {
-    int32_t MEMORIA_SOCKET;
-    char *IP_MEMORIA;
-    char *PUERTO_MEMORIA;
-    char *ALGORITMO_PLANIFICACION;
-    double ESTIMACION_INICIAL;
-    double ALFA;
-    char **DISPOSITIVOS_IO;
-    char **DURACIONES_IO;
-    uint16_t GRADO_MULTIPROGRAMACION;
-    uint16_t GRADO_MULTIPROCESAMIENTO;
-    uint16_t TIEMPO_DEADLOCK;
-} t_kernel_config;
+typedef struct t_kernel_config t_kernel_config;
 
 extern t_log *kernelLogger;
 extern t_kernel_config *kernelCfg;
 
-t_kernel_config *kernel_cfg_create(void);
-void kernel_config_initialize(void *kernelCfg, t_config *config);
-void liberar_modulo_kernel(t_log *kernelLogger, t_kernel_config *kernelCfg);
+char **kernel_config_get_dispositivosIO(t_kernel_config *);
+char **kernel_config_get_duracionesIO(t_kernel_config *);
+char *kernel_config_get_mem_ip(t_kernel_config *);
+char *kernel_config_get_mem_port(t_kernel_config *);
+char const *kernel_config_get_algoritmo_planificacion(t_kernel_config *);
+double kernel_config_get_alfa(t_kernel_config *);
+double kernel_config_get_est_inicial(t_kernel_config *);
+int32_t kernel_config_get_mem_socket(t_kernel_config *);
+t_kernel_config *kernel_config_create(void);
+uint16_t kernel_config_get_grado_multiproc(t_kernel_config *);
+uint16_t kernel_config_get_grado_multiprog(t_kernel_config *);
+uint16_t kernel_config_get_tiempo_deadlock(t_kernel_config *);
+void kernel_config_set_mem_socket(t_kernel_config *, int32_t socket);
+void liberar_modulo_kernel(t_log *, t_kernel_config *);
 
 #endif

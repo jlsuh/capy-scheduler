@@ -7,7 +7,7 @@ static void liberar_recursos(mate_inner_structure* mateInner);
 
 //------------------ General Functions ---------------------/
 int mate_init(mate_instance* libRef, char* configPath) {
-    mate_inner_structure* mateInner = malloc(sizeof(mate_inner_structure));
+    mate_inner_structure* mateInner = malloc(sizeof(*mateInner));
     int resultado = -1;
 
     t_config* config = config_create(configPath);

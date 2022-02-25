@@ -1,43 +1,43 @@
 #include "buffer.h"
 
 t_buffer* buffer_create() {
-    t_buffer* buffer = malloc(sizeof(t_buffer));
-    buffer->size = 0;
-    buffer->stream = NULL;
-    return buffer;
+    t_buffer* self = malloc(sizeof(*self));
+    self->size = 0;
+    self->stream = NULL;
+    return self;
 }
 
-void buffer_destroy(t_buffer* buffer) {
-    free(buffer->stream);
-    free(buffer);
+void buffer_destroy(t_buffer* self) {
+    free(self->stream);
+    free(self);
 }
 
-void buffer_pack(t_buffer* buffer, void* streamToAdd, int size) {
-    buffer->stream = realloc(buffer->stream, buffer->size + size);
-    memcpy(buffer->stream + buffer->size, streamToAdd, size);
-    buffer->size += size;
+void buffer_pack(t_buffer* self, void* streamToAdd, int size) {
+    self->stream = realloc(self->stream, self->size + size);
+    memcpy(self->stream + self->size, streamToAdd, size);
+    self->size += size;
 }
 
-void buffer_unpack(t_buffer* buffer, void* dest, int size) {
-    memcpy(dest, buffer->stream, size);
-    buffer->size -= size;
-    memmove(buffer->stream, buffer->stream + size, buffer->size);
-    buffer->stream = realloc(buffer->stream, buffer->size);
+void buffer_unpack(t_buffer* self, void* dest, int size) {
+    memcpy(dest, self->stream, size);
+    self->size -= size;
+    memmove(self->stream, self->stream + size, self->size);
+    self->stream = realloc(self->stream, self->size);
 }
 
-void buffer_pack_string(t_buffer* buffer, char* stringToAdd) {
+void buffer_pack_string(t_buffer* self, char* stringToAdd) {
     uint32_t length = strlen(stringToAdd) + 1;
-    buffer_pack(buffer, &length, sizeof(length));
-    buffer->stream = realloc(buffer->stream, buffer->size + length);
-    memcpy(buffer->stream + buffer->size, stringToAdd, length);
-    buffer->size += length;
+    buffer_pack(self, &length, sizeof(length));
+    self->stream = realloc(self->stream, self->size + length);
+    memcpy(self->stream + self->size, stringToAdd, length);
+    self->size += length;
 }
 
-char* buffer_unpack_string(t_buffer* buffer) {
+char* buffer_unpack_string(t_buffer* self) {
     char* str;
     uint32_t length;
-    buffer_unpack(buffer, &length, sizeof(length));
+    buffer_unpack(self, &length, sizeof(length));
     str = malloc(length);
-    buffer_unpack(buffer, str, length);
+    buffer_unpack(self, str, length);
     return str;
 }
