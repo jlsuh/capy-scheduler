@@ -1,8 +1,8 @@
 #ifndef DEADLOCK_H_INCLUDED
 #define DEADLOCK_H_INCLUDED
 
-#include <sys/param.h>
 #include <CUnit/Basic.h>
+#include <sys/param.h>
 
 #include "common_utils.h"
 #include "duplicated_logic_allocator.h"

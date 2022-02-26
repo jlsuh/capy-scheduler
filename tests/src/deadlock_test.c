@@ -28,7 +28,7 @@ static uint32_t* pid6;
 
 static bool retiene_instancias_del_semaforo(t_pcb* pcb, int32_t instanciasRetenidasExpected, t_recurso_sem* sem) {
     void* instanciasRetenidas = dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
-    int32_t intanciasRetenidasSem = *(int32_t*) instanciasRetenidas;
+    int32_t intanciasRetenidasSem = *(int32_t*)instanciasRetenidas;
     return instanciasRetenidas != NULL && intanciasRetenidasSem == instanciasRetenidasExpected;
 }
 
@@ -173,12 +173,12 @@ void test_un_proceso_al_hacer_un_post_de_un_semaforo_que_no_retenia_sigue_sin_re
 }
 
 static bool espera_algun_semaforo(void* pcbVoid) {
-    t_pcb* pcb = (t_pcb*) pcbVoid;
+    t_pcb* pcb = (t_pcb*)pcbVoid;
     return pcb->deadlockInfo->esperaEnSemaforo != NULL;
 }
 
 static bool espera_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
-    if(espera_algun_semaforo(pcb) && strcmp(pcb->deadlockInfo->esperaEnSemaforo->nombre, sem->nombre) == 0) {
+    if (espera_algun_semaforo(pcb) && strcmp(pcb->deadlockInfo->esperaEnSemaforo->nombre, sem->nombre) == 0) {
         return true;
     }
     return false;
@@ -195,32 +195,32 @@ static bool eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dim
     */
     int initInnerSize = list_size(firstToIterateList);
     int initPivotSize = list_size(pivotList);
-    for(int i = 0; i < list_size(pivotList); i++) {
+    for (int i = 0; i < list_size(pivotList); i++) {
         t_recurso_sem* sem = NULL;
         t_pcb* pcb = NULL;
         bool espera = false;
         bool retencion = false;
         bool existenCeldasNoNulas = false;
-        for(int j = 0; j < list_size(firstToIterateList); j++) {
-            if(firstToIterateType == PCB_LIST) {
+        for (int j = 0; j < list_size(firstToIterateList); j++) {
+            if (firstToIterateType == PCB_LIST) {
                 sem = list_get(pivotList, i);
                 pcb = list_get(firstToIterateList, j);
-            } else if(firstToIterateType == SEM_LIST) {
+            } else if (firstToIterateType == SEM_LIST) {
                 sem = list_get(firstToIterateList, j);
                 pcb = list_get(pivotList, i);
             }
-            if(!espera) {
+            if (!espera) {
                 espera = espera_al_semaforo(pcb, sem);
             }
-            if(!retencion) {
+            if (!retencion) {
                 retencion = esta_reteniendo_instancias_del_semaforo(pcb, sem);
             }
-            if(espera && retencion) {
+            if (espera && retencion) {
                 existenCeldasNoNulas = true;
                 break;
             }
         }
-        if(!existenCeldasNoNulas) {
+        if (!existenCeldasNoNulas) {
             list_remove(pivotList, i);
             i--;
         }
@@ -231,7 +231,7 @@ static bool eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dim
 static bool reducir_matrices_de_deteccion(t_list* pcbsDeadlock, t_list* semsDeadlock) {
     bool seEliminaronColumnas = true;
     bool seEliminaronFilas = true;
-    while(seEliminaronColumnas || seEliminaronFilas) {
+    while (seEliminaronColumnas || seEliminaronFilas) {
         seEliminaronColumnas = eliminar_celdas_nulas_consecutivas(pcbsDeadlock, PCB_LIST, semsDeadlock);
         seEliminaronFilas = eliminar_celdas_nulas_consecutivas(semsDeadlock, SEM_LIST, pcbsDeadlock);
     }
@@ -240,13 +240,13 @@ static bool reducir_matrices_de_deteccion(t_list* pcbsDeadlock, t_list* semsDead
 
 static void print_alloced_resources_matrix(t_list* pcbsDeadlock, t_list* semsDeadlock) {
     printf("\nMatriz de recursos asignados\n");
-    for(int i = 0; i < list_size(pcbsDeadlock); i++) {
+    for (int i = 0; i < list_size(pcbsDeadlock); i++) {
         t_pcb* pcb = list_get(pcbsDeadlock, i);
-        for(int j = 0; j < list_size(semsDeadlock); j++) {
+        for (int j = 0; j < list_size(semsDeadlock); j++) {
             t_recurso_sem* sem = list_get(semsDeadlock, j);
             t_dictionary* dict = pcb->deadlockInfo->semaforosQueRetiene;
-            if(dictionary_has_key(dict, sem->nombre)) {
-                printf("%d ", *(int*) dictionary_get(dict, sem->nombre));
+            if (dictionary_has_key(dict, sem->nombre)) {
+                printf("%d ", *(int*)dictionary_get(dict, sem->nombre));
             } else {
                 printf("0 ");
             }
@@ -257,11 +257,11 @@ static void print_alloced_resources_matrix(t_list* pcbsDeadlock, t_list* semsDea
 
 static void print_awaiting_resources_matrix(t_list* pcbsDeadlock, t_list* semsDeadlock) {
     printf("\nMatriz de peticiones pendientes\n");
-    for(int i = 0; i < list_size(pcbsDeadlock); i++) {
+    for (int i = 0; i < list_size(pcbsDeadlock); i++) {
         t_pcb* pcb = list_get(pcbsDeadlock, i);
-        for(int j = 0; j < list_size(semsDeadlock); j++) {
+        for (int j = 0; j < list_size(semsDeadlock); j++) {
             t_recurso_sem* sem = list_get(semsDeadlock, j);
-            if(espera_al_semaforo(pcb, sem)) {
+            if (espera_al_semaforo(pcb, sem)) {
                 printf("1 ");
             } else {
                 printf("0 ");
@@ -408,12 +408,12 @@ static bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
 static void recuperarse_del_deadlock(t_list* pcbsDeadlock, t_list* semsDeadlock, t_list* semsList, t_list* pcbsBlocked /*, t_list* pcbsSusBlocked*/) {
     t_pcb* pcbDeMayorPID = list_get_maximum(pcbsDeadlock, mayor_pid);
     t_dictionary* semsQueRetienePCBDeMayorPID = pcbDeMayorPID->deadlockInfo->semaforosQueRetiene;
-    for(int i = 0; i < list_size(semsList); i++) {
+    for (int i = 0; i < list_size(semsList); i++) {
         t_recurso_sem* sem = list_get(semsList, i);
-        if(esta_reteniendo_instancias_del_semaforo(pcbDeMayorPID, sem)) {
-            t_recurso_sem* semEnListaDeadlock = list_find2(semsDeadlock, (void*) es_este_semaforo, (void*) (sem->nombre));
+        if (esta_reteniendo_instancias_del_semaforo(pcbDeMayorPID, sem)) {
+            t_recurso_sem* semEnListaDeadlock = list_find2(semsDeadlock, (void*)es_este_semaforo, (void*)(sem->nombre));
             bool esParteDelDedlock = semEnListaDeadlock != NULL;
-            if(i == 0 && esParteDelDedlock) {
+            if (i == 0 && esParteDelDedlock) {
                 // bool fueEliminado = eliminar_pcb_de_lista(pcbDeMayorPID, pcbsBlocked);
                 eliminar_pcb_de_lista(pcbDeMayorPID, pcbsBlocked);
                 /* if(!fueEliminado) {
@@ -421,8 +421,8 @@ static void recuperarse_del_deadlock(t_list* pcbsDeadlock, t_list* semsDeadlock,
                 } */
                 eliminar_pcb_de_lista(pcbDeMayorPID, sem->colaPCBs->elements);
             }
-            int cantInstRet = *(int*) dictionary_get(semsQueRetienePCBDeMayorPID, sem->nombre);
-            while(cantInstRet > 0) {
+            int cantInstRet = *(int*)dictionary_get(semsQueRetienePCBDeMayorPID, sem->nombre);
+            while (cantInstRet > 0) {
                 kernel_sem_post(sem, pcbDeMayorPID);
                 cantInstRet--;
             }
@@ -445,7 +445,7 @@ static void detectar_y_recuperarse_del_deadlock(t_list* pcbsBlocked, t_cola_recu
     print_awaiting_resources_matrix(pcbsDeadlock, semsDeadlock);
     print_alloced_resources_matrix(pcbsDeadlock, semsDeadlock);
 
-    while(existeDeadlock) {
+    while (existeDeadlock) {
         recuperarse_del_deadlock(pcbsDeadlock, semsDeadlock, semaforosDelSistema->listaRecursos, pcbsBlocked);
         print_awaiting_resources_matrix(pcbsDeadlock, semsDeadlock);
         print_alloced_resources_matrix(pcbsDeadlock, semsDeadlock);

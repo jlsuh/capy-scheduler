@@ -2,7 +2,6 @@
 #define BUFFER_TEST_H_INCLUDED
 
 #include <CUnit/Basic.h>
-
 #include <commons/config.h>
 
 #include "buffer.h"

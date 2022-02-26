@@ -1,12 +1,11 @@
 #ifndef COMMONS_TEST_H_INCLUDED
 #define COMMONS_TEST_H_INCLUDED
 
-#include <stdlib.h>
 #include <CUnit/Basic.h>
-
-#include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
+#include <commons/collections/list.h>
 #include <commons/string.h>
+#include <stdlib.h>
 
 #include "common_utils.h"
 #include "duplicated_logic_allocator.h"

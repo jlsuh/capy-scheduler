@@ -1,6 +1,6 @@
 #include "stream_connections_test.h"
 
-extern t_config* testConfig;    // En tests.h
+extern t_config* testConfig;  // En tests.h
 static char* ip;
 static char* puerto;
 static int sockServ;
@@ -44,7 +44,7 @@ void test_es_posible_serializar_un_string_enviarlo_y_deserializarlo(void) {
     buffer_destroy(buffer);
     free(streamAEnviar);
 
-    char* recvdString = (char*) stream_deserialize(sockServDelCliente);
+    char* recvdString = (char*)stream_deserialize(sockServDelCliente);
 
     CU_ASSERT_STRING_EQUAL(recvdString, testString);
 

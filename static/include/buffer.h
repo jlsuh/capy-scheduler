@@ -1,9 +1,9 @@
 #ifndef BUFFER_H_INCLUDED
 #define BUFFER_H_INCLUDED
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 
 typedef struct {
     uint32_t size;
@@ -13,7 +13,7 @@ typedef struct {
 /**
  * @brief Crea un t_buffer*
  */
-t_buffer *buffer_create();
+t_buffer *buffer_create(void);
 
 /**
  * @brief Destruye un t_buffer*

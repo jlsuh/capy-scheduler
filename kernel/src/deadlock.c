@@ -1,19 +1,34 @@
 #include "deadlock.h"
 
-bool espera_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
-    if(espera_algun_semaforo(pcb) && strcmp(pcb->deadlockInfo->esperaEnSemaforo->nombre, sem->nombre) == 0) {
+#include <commons/collections/list.h>
+#include <commons/string.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "common_utils.h"
+#include "kernel_structs.h"
+#include "scheduler.h"
+#include "stream.h"
+
+typedef enum {
+    PCB_LIST,
+    SEM_LIST
+} t_dimention_type;
+
+static bool espera_algun_semaforo(void* pcbVoid) {
+    t_pcb* pcb = (t_pcb*)pcbVoid;
+    return pcb->deadlockInfo->esperaEnSemaforo != NULL;
+}
+
+static bool espera_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
+    if (espera_algun_semaforo(pcb) && strcmp(pcb->deadlockInfo->esperaEnSemaforo->nombre, sem->nombre) == 0) {
         return true;
     }
     return false;
 }
 
-bool retiene_instancias_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
+static bool retiene_instancias_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     return dictionary_has_key(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
-}
-
-bool espera_algun_semaforo(void* pcbVoid) {
-    t_pcb* pcb = (t_pcb*) pcbVoid;
-    return pcb->deadlockInfo->esperaEnSemaforo != NULL;
 }
 
 bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
@@ -22,62 +37,62 @@ bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
     return string_equals_ignore_case(recursoSem->nombre, nombre);
 }
 
-bool es_este_pcb(void* pcbVoid, void* pidVoid) {
-    t_pcb* pcb = (t_pcb*) pcbVoid;
-    uint32_t pid = *(uint32_t*) pidVoid;
+static bool es_este_pcb(void* pcbVoid, void* pidVoid) {
+    t_pcb* pcb = (t_pcb*)pcbVoid;
+    uint32_t pid = *(uint32_t*)pidVoid;
     return pcb->pid == pid;
 }
 
-void* mayor_pid(void* pcbVoid1, void* pcbVoid2) {
+static void* mayor_pid(void* pcbVoid1, void* pcbVoid2) {
     t_pcb* pcb1 = pcbVoid1;
     t_pcb* pcb2 = pcbVoid2;
     return pcb1->pid > pcb2->pid ? pcb1 : pcb2;
 }
 
-bool matrices_son_nulas(t_list* pcbsEnDeadlock, t_list* semsEnDeadlock) {
+static bool matrices_son_nulas(t_list* pcbsEnDeadlock, t_list* semsEnDeadlock) {
     return !list_is_empty(pcbsEnDeadlock) && !list_is_empty(semsEnDeadlock);
 }
 
-bool eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dimention_type firstToIterateType, t_list* pivotList) {
+static bool eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dimention_type firstToIterateType, t_list* pivotList) {
     /* Eliminar:
     - Procesos que no poseen retención o espera
     - Recursos que nadie retiene o espera
     */
     int initInnerSize = list_size(firstToIterateList);
     int initPivotSize = list_size(pivotList);
-    for(int i = 0; i < list_size(pivotList); i++) {
+    for (int i = 0; i < list_size(pivotList); i++) {
         t_recurso_sem* sem = NULL;
         t_pcb* pcb = NULL;
         bool espera = false;
         bool retencion = false;
         bool existenCeldasNoNulas = false;
-        for(int j = 0; j < list_size(firstToIterateList); j++) {
+        for (int j = 0; j < list_size(firstToIterateList); j++) {
             /* Fijamos la fila: iteramos todos los semáforos para 1 pcb */
-            if(firstToIterateType == PCB_LIST) {
+            if (firstToIterateType == PCB_LIST) {
                 sem = list_get(pivotList, i);
                 pcb = list_get(firstToIterateList, j);
             }
             /* Fijamos la columna: iteramos todos los pcbs para 1 semáforo */
-            else if(firstToIterateType == SEM_LIST) {
+            else if (firstToIterateType == SEM_LIST) {
                 sem = list_get(firstToIterateList, j);
                 pcb = list_get(pivotList, i);
             }
             /* Armamos las matrices */
-            if(!espera) {
+            if (!espera) {
                 /* Contemplamos la matriz de peticiones pendientes */
                 espera = espera_al_semaforo(pcb, sem);
             }
-            if(!retencion) {
+            if (!retencion) {
                 /* Contemplamos la matriz de recursos asignados */
                 retencion = retiene_instancias_del_semaforo(pcb, sem);
             }
-            if(espera && retencion) {
+            if (espera && retencion) {
                 existenCeldasNoNulas = true;
                 break;
             }
         }
         /* Reducción de la lista de la dimensión fijada */
-        if(!existenCeldasNoNulas) {
+        if (!existenCeldasNoNulas) {
             list_remove(pivotList, i);
             i--;
         }
@@ -85,31 +100,31 @@ bool eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dimention_
     return list_size(firstToIterateList) < initInnerSize || list_size(pivotList) < initPivotSize;
 }
 
-void reducir_matrices_de_deteccion(t_list* pcbsEnDeadlock, t_list* semsEnDeadlock) {
-    if(!list_is_empty(pcbsEnDeadlock) && !list_is_empty(semsEnDeadlock)) {
+static void reducir_matrices_de_deteccion(t_list* pcbsEnDeadlock, t_list* semsEnDeadlock) {
+    if (!list_is_empty(pcbsEnDeadlock) && !list_is_empty(semsEnDeadlock)) {
         bool seEliminaronColumnas = true;
         bool seEliminaronFilas = true;
-        while(seEliminaronColumnas || seEliminaronFilas) {
+        while (seEliminaronColumnas || seEliminaronFilas) {
             seEliminaronColumnas = eliminar_celdas_nulas_consecutivas(pcbsEnDeadlock, PCB_LIST, semsEnDeadlock);
             seEliminaronFilas = eliminar_celdas_nulas_consecutivas(semsEnDeadlock, SEM_LIST, pcbsEnDeadlock);
         }
     }
 }
 
-bool eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
-    int index = list_get_index(lista, (void*) es_este_pcb, (void*) &(pcb->pid));
-    if(index != -1) {
+static bool eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
+    int index = list_get_index(lista, (void*)es_este_pcb, (void*)&(pcb->pid));
+    if (index != -1) {
         list_remove(lista, index);
         return true;
     }
     return false;
 }
 
-void finalizar_carpincho_en_deadlock(t_pcb* pcb) {
+static void finalizar_carpincho_en_deadlock(t_pcb* pcb) {
     char* prevStatus = NULL;
-    if(pcb->status == BLOCKED) {
+    if (pcb->status == BLOCKED) {
         prevStatus = string_from_format("BLOCKED");
-    } else if(pcb->status == SUSBLOCKED) {
+    } else if (pcb->status == SUSBLOCKED) {
         prevStatus = string_from_format("SUSP/BLOCKED");
     }
     log_info(kernelLogger, "Deadlock: Finalización abrupta del PCB ID %d por resolución de deadlocks", pcb->pid);
@@ -119,29 +134,29 @@ void finalizar_carpincho_en_deadlock(t_pcb* pcb) {
     free(prevStatus);
 }
 
-void liberar_instancias_que_retiene(t_pcb* pcb, t_recurso_sem* sem) {
-    int cantInstRet = *(int*) dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
-    while(cantInstRet > 0) {
+static void liberar_instancias_que_retiene(t_pcb* pcb, t_recurso_sem* sem) {
+    int cantInstRet = *(int*)dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
+    while (cantInstRet > 0) {
         kernel_sem_post(sem, pcb);
         cantInstRet--;
     }
 }
 
-void recuperarse_del_deadlock(t_list* pcbsEnDeadlock, t_list* semsEnDeadlock, t_list* listaDeSemaforosDelSistema,
-                                t_list* listaDePcbsBlockedDelSistema, t_list* listaDePcbsSusBlockedDelSistema, sem_t* gradoMultiprog) {
+static void recuperarse_del_deadlock(t_list* pcbsEnDeadlock, t_list* semsEnDeadlock, t_list* listaDeSemaforosDelSistema,
+                                     t_list* listaDePcbsBlockedDelSistema, t_list* listaDePcbsSusBlockedDelSistema, sem_t* gradoMultiprog) {
     t_pcb* pcbDeMayorPID = list_get_maximum(pcbsEnDeadlock, mayor_pid);
     bool yaFueEliminadoDeLasColas = false;
-    for(int i = 0; i < list_size(listaDeSemaforosDelSistema); i++) {
+    for (int i = 0; i < list_size(listaDeSemaforosDelSistema); i++) {
         t_recurso_sem* sem = list_get(listaDeSemaforosDelSistema, i);
-        if(retiene_instancias_del_semaforo(pcbDeMayorPID, sem)) {
-            if(!yaFueEliminadoDeLasColas) {
+        if (retiene_instancias_del_semaforo(pcbDeMayorPID, sem)) {
+            if (!yaFueEliminadoDeLasColas) {
                 bool acabaDeSerEliminado = eliminar_pcb_de_lista(pcbDeMayorPID, listaDePcbsBlockedDelSistema);
-                if(!acabaDeSerEliminado) {
+                if (!acabaDeSerEliminado) {
                     eliminar_pcb_de_lista(pcbDeMayorPID, listaDePcbsSusBlockedDelSistema);
                 } else {
                     sem_post(gradoMultiprog);
                 }
-                t_recurso_sem* semEnDondeSeEncuentraBloqueado = list_find2(listaDeSemaforosDelSistema, (void*) es_este_semaforo, (void*) (pcbDeMayorPID->deadlockInfo->esperaEnSemaforo->nombre));
+                t_recurso_sem* semEnDondeSeEncuentraBloqueado = list_find2(listaDeSemaforosDelSistema, (void*)es_este_semaforo, (void*)(pcbDeMayorPID->deadlockInfo->esperaEnSemaforo->nombre));
                 eliminar_pcb_de_lista(pcbDeMayorPID, semEnDondeSeEncuentraBloqueado->colaPCBs->elements);
                 yaFueEliminadoDeLasColas = true;
                 semEnDondeSeEncuentraBloqueado->valorActual++;
@@ -158,22 +173,21 @@ void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_co
     t_list* pcbsEnDeadlock = list_create();
     list_add_all(pcbsEnDeadlock, pcbsDeadlockBlocked);
     list_add_all(pcbsEnDeadlock, pcbsDeadlockSusBlocked);
-    if(!list_is_empty(pcbsEnDeadlock)) {
+    if (!list_is_empty(pcbsEnDeadlock)) {
         t_list* semsEnDeadlock = list_create();
         list_add_all(semsEnDeadlock, semaforosDelSistema->listaRecursos);
         bool existeDeadlock = true;
-        while(existeDeadlock) {
+        while (existeDeadlock) {
             reducir_matrices_de_deteccion(pcbsEnDeadlock, semsEnDeadlock);
             existeDeadlock = matrices_son_nulas(pcbsEnDeadlock, semsEnDeadlock);
-            if(existeDeadlock) {
+            if (existeDeadlock) {
                 recuperarse_del_deadlock(
                     pcbsEnDeadlock,
                     semsEnDeadlock,
                     semaforosDelSistema->listaRecursos,
                     pcbsBlocked->lista,
                     pcbsSusBlocked->lista,
-                    gradoMultiprog
-                );
+                    gradoMultiprog);
                 list_destroy(pcbsDeadlockBlocked);
                 list_destroy(pcbsDeadlockSusBlocked);
                 list_destroy(pcbsEnDeadlock);

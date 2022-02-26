@@ -1,10 +1,10 @@
+#include <commons/log.h>
+#include <matelib.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <matelib.h>
-#include <commons/log.h>
+#include <time.h>
 
 char *LOG_PATH = "./planificacion.log";
 char *PROGRAM_NAME = "planificacion";
@@ -12,19 +12,16 @@ sem_t *va_el_2;
 sem_t *va_el_3;
 t_log *logger;
 
-void imprimir_carpincho_n_hace_algo(int numero_de_carpincho)
-{
+void imprimir_carpincho_n_hace_algo(int numero_de_carpincho) {
     log_info(logger, "EJECUTANDO Carpincho %d", numero_de_carpincho);
     sleep(2);
 }
 
-void exec_carpincho_1(char *config)
-{
+void exec_carpincho_1(char *config) {
     mate_instance self;
     mate_init(&self, config);
     sem_post(va_el_2);
-    for (int i = 0; i < 3; i++)
-    {
+    for (int i = 0; i < 3; i++) {
         imprimir_carpincho_n_hace_algo(1);
         mate_call_io(&self, (mate_io_resource) "pelopincho", "Carpincho 1 se va a IO");
     }
@@ -32,14 +29,12 @@ void exec_carpincho_1(char *config)
     mate_close(&self);
 }
 
-void exec_carpincho_2(char *config)
-{
+void exec_carpincho_2(char *config) {
     mate_instance self;
     sem_wait(va_el_2);
     mate_init(&self, config);
-    sem_post(va_el_3); //Creo que esta demas, es para que el 3 entre dsp del 2
-    for (int i = 0; i < 3; i++)
-    {
+    sem_post(va_el_3);  // Creo que esta demas, es para que el 3 entre dsp del 2
+    for (int i = 0; i < 3; i++) {
         imprimir_carpincho_n_hace_algo(2);
         mate_call_io(&self, (mate_io_resource) "pelopincho", "Carpincho 2 se va a IO");
     }
@@ -47,13 +42,11 @@ void exec_carpincho_2(char *config)
     mate_close(&self);
 }
 
-void exec_carpincho_3(char *config)
-{
+void exec_carpincho_3(char *config) {
     mate_instance self;
     sem_wait(va_el_3);
     mate_init(&self, config);
-    for (int i = 0; i < 3; i++)
-    {
+    for (int i = 0; i < 3; i++) {
         imprimir_carpincho_n_hace_algo(3);
         imprimir_carpincho_n_hace_algo(3);
         imprimir_carpincho_n_hace_algo(3);
@@ -69,8 +62,7 @@ void exec_carpincho_3(char *config)
     mate_close(&self);
 }
 
-void free_all()
-{
+void free_all() {
     sem_destroy(va_el_3);
     free(va_el_3);
     sem_destroy(va_el_2);
@@ -79,16 +71,14 @@ void free_all()
     log_destroy(logger);
 }
 
-void init_sems()
-{
+void init_sems() {
     va_el_2 = malloc(sizeof(*va_el_2));
     sem_init(va_el_2, 1, 0);
     va_el_3 = malloc(sizeof(*va_el_2));
     sem_init(va_el_3, 1, 0);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     logger = log_create(LOG_PATH, PROGRAM_NAME, true, LOG_LEVEL_DEBUG);
     pthread_t carpincho1_thread;
     pthread_t carpincho2_thread;

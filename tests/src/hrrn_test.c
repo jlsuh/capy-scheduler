@@ -101,10 +101,10 @@ void test_es_posible_elegir_el_siguiente_a_ejecutar_con_hrrn(void) {
     t_pcb* pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
 
     CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho5->socket);
-    CU_ASSERT_EQUAL(pcbDeMayorRR->hrrn->s, /*s = 0.5 * 0 + 0.5 * 3 =*/ 1.50000 /*= 1.5UT*/);
+    CU_ASSERT_EQUAL(pcbDeMayorRR->hrrn->s, /*s = 0.5 * 0 + 0.5 * 3 =*/1.50000 /*= 1.5UT*/);
 
     // Suponiendo que ejecuta 2UT
-    carpincho5->algoritmo_update_next_est_info(carpincho5,  /*Real anterior =*/ 2000000 /*= 2UT*/, 0);
+    carpincho5->algoritmo_update_next_est_info(carpincho5, /*Real anterior =*/2000000 /*= 2UT*/, 0);
     CU_ASSERT_EQUAL(carpincho5->hrrn->s, /* s = 0.5 * 2 + 0.5 * 1.5 =*/1.75000);
 
     pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);

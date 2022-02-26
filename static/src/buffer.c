@@ -1,6 +1,6 @@
 #include "buffer.h"
 
-t_buffer* buffer_create() {
+t_buffer* buffer_create(void) {
     t_buffer* self = malloc(sizeof(*self));
     self->size = 0;
     self->stream = NULL;

@@ -1,10 +1,9 @@
 #ifndef MATELIB_H_INCLUDED
 #define MATELIB_H_INCLUDED
 
-#include <stdint.h>
-
 #include <commons/config.h>
 #include <commons/log.h>
+#include <stdint.h>
 
 #include "buffer.h"
 #include "connections.h"
@@ -15,9 +14,9 @@
 #define MATE_LOG_PATH "bin/matelib_log.log"
 
 typedef struct mate_inner_structure {
-    char* ip;
-    char* puerto;
-    t_log* mateLogger;
+    char *ip;
+    char *puerto;
+    t_log *mateLogger;
     int32_t socketConexion;
     uint32_t pid;
 } mate_inner_structure;

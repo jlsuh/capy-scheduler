@@ -15,14 +15,12 @@ int main(int argc, char* argv[]) {
 }
 
 void commons_tests(void) {
-
     CU_pSuite commonsSuite = CU_add_suite_with_setup_and_teardown(
         "Commons Test Suite",
         NULL,
         NULL,
         test_commons_setup,
-        test_commons_tear_down
-    );
+        test_commons_tear_down);
     t_test_case commonsTestCases[] = {
         TEST_FUNC(test_dictionary),
         TEST_FUNC(test_es_posible_cambiar_de_string_en_un_instante_posterior),
@@ -31,18 +29,15 @@ void commons_tests(void) {
         TEST_FUNC(test_eliminar_un_elemento_de_la_lista_de_una_queue),
     };
     ADD_TEST_CASES_TO_SUITE(commonsSuite, commonsTestCases);
-
 }
 
 void kernel_tests(void) {
-
     CU_pSuite SJFSuite = CU_add_suite_with_setup_and_teardown(
         "Algoritmo SJF Test Suite",
         NULL,
         NULL,
         test_sjf_setup,
-        test_sjf_tear_down
-    );
+        test_sjf_tear_down);
     t_test_case SJFTestCases[] = {
         TEST_FUNC(test_es_posible_actualizar_info_para_siguiente_estimacion),
         TEST_FUNC(test_la_estimacion_actual_inicial_es_la_misma_para_todos),
@@ -56,8 +51,7 @@ void kernel_tests(void) {
         NULL,
         NULL,
         test_hrrn_setup,
-        test_hrrn_tear_down
-    );
+        test_hrrn_tear_down);
     t_test_case HRRNTestCases[] = {
         TEST_FUNC(test_el_pcb_de_mayor_RR_es_quien_se_inicializa_primero_1),
         TEST_FUNC(test_el_pcb_de_mayor_RR_es_quien_se_inicializa_primero_2),
@@ -73,8 +67,7 @@ void kernel_tests(void) {
         NULL,
         NULL,
         test_deadlock_setup,
-        test_deadlock_tear_down
-    );
+        test_deadlock_tear_down);
     t_test_case deadlockTestCases[] = {
         TEST_FUNC(test_deteccion_y_recuperacion_del_deadlock_1),
         TEST_FUNC(test_deteccion_y_recuperacion_del_deadlock_2),
@@ -92,18 +85,15 @@ void kernel_tests(void) {
         TEST_FUNC(test_un_proceso_retiene_una_instancia_del_semaforo_en_caso_de_no_bloquearse),
     };
     ADD_TEST_CASES_TO_SUITE(deadlockSuite, deadlockTestCases);
-
 }
 
 void static_lib_tests(void) {
-
     CU_pSuite bufferSuite = CU_add_suite_with_setup_and_teardown(
         "buffer.h Test Suite",
         test_suite_initialize,
         test_suite_cleanUp,
         test_buffer_setup,
-        test_buffer_tear_down
-    );
+        test_buffer_tear_down);
     t_test_case bufferTestCases[] = {
         TEST_FUNC(test_buffer_create),
         TEST_FUNC(test_es_posible_desempaquetar_cualquier_valor),
@@ -117,14 +107,12 @@ void static_lib_tests(void) {
         test_suite_initialize,
         test_suite_cleanUp,
         test_stream_conexiones_setup,
-        test_stream_conexiones_tear_down
-    );
+        test_stream_conexiones_tear_down);
     t_test_case streamConexionesTestCases[] = {
         TEST_FUNC(test_es_posible_establecer_una_conexion),
         TEST_FUNC(test_es_posible_serializar_un_string_enviarlo_y_deserializarlo),
     };
     ADD_TEST_CASES_TO_SUITE(streamConexionesSuite, streamConexionesTestCases);
-
 }
 
 // Se ejecuta cada vez que inicia 1 CU_pSuite

@@ -1,16 +1,14 @@
 #ifndef MEM_ADAPTER_H_INCLUDED
 #define MEM_ADAPTER_H_INCLUDED
 
+#include <commons/log.h>
 #include <stdio.h>
 
-#include <commons/log.h>
-
 #include "buffer.h"
-#include "stream.h"
+#include "kernel.h"
 #include "kernel_config.h"
 #include "kernel_structs.h"
-
-#define EXEC_MODE "DEV_MODE"
+#include "stream.h"
 
 extern t_log *kernelLogger;
 extern t_kernel_config *kernelCfg;

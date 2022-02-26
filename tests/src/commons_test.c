@@ -5,20 +5,18 @@ static char* string;
 
 // @Before
 void test_commons_setup(void) {
-
 }
 
 // @After
 void test_commons_tear_down(void) {
-
 }
 
 void test_list_remove_retorna_nulo_en_caso_de_lista_vacia(void) {
     lista = list_create();
     t_pcb* pcb = NULL;
 
-    if(!list_is_empty(lista)) {
-        pcb = (t_pcb*) list_remove(lista, 0);
+    if (!list_is_empty(lista)) {
+        pcb = (t_pcb*)list_remove(lista, 0);
     }
 
     CU_ASSERT_PTR_NULL(pcb);
@@ -52,7 +50,7 @@ void test_dictionary(void) {
     dictionary_put(dict, "Carpincho1", innerDict);
 
     t_dictionary* sameInnerDict = dictionary_get(dict, "Carpincho1");
-    int sameData = *(int*) dictionary_get(sameInnerDict, "SEM1");
+    int sameData = *(int*)dictionary_get(sameInnerDict, "SEM1");
 
     CU_ASSERT_EQUAL(sameData, 1);
 

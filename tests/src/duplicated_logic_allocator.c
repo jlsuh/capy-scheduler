@@ -8,7 +8,7 @@ double get_diferencial_de_tiempo(clock_t tiempoFinal, clock_t tiempoInicial) {
 }
 
 double media_exponencial(double realAnterior, double estAnterior) {
-// Est(n) = α . R(n-1) + (1 - α) . Est(n-1)
+    // Est(n) = α . R(n-1) + (1 - α) . Est(n-1)
     return ALFA * realAnterior + (1 - ALFA) * estAnterior;
 }
 
@@ -21,9 +21,9 @@ t_pcb* elegir_en_base_a_hrrn(t_list* lista) {
     t_pcb* pcbConMayorRR = list_get(lista, 0);
     t_pcb* pcbTemp = NULL;
 
-    for(int i = 1; i < list_size(lista); i++) {
+    for (int i = 1; i < list_size(lista); i++) {
         pcbTemp = list_get(lista, i);
-        if(response_ratio(pcbTemp, now) > response_ratio(pcbConMayorRR, now)) {
+        if (response_ratio(pcbTemp, now) > response_ratio(pcbConMayorRR, now)) {
             pcbConMayorRR = pcbTemp;
         }
     }
@@ -32,7 +32,7 @@ t_pcb* elegir_en_base_a_hrrn(t_list* lista) {
 }
 
 t_pcb* elegir_en_base_a_sjf(t_list* lista) {
-    t_pcb* pcbMenorEstimacion = (t_pcb*) list_get_minimum(lista, (void*) sjf_pcb_menor_estimacion_entre);
+    t_pcb* pcbMenorEstimacion = (t_pcb*)list_get_minimum(lista, (void*)sjf_pcb_menor_estimacion_entre);
     return pcbMenorEstimacion;
 }
 
@@ -42,11 +42,11 @@ t_pcb* pcb_create(uint32_t* pid, const char* algoritmo) {
     self->status = NEW;
     self->sjf = NULL;
     self->hrrn = NULL;
-    if(strcmp(algoritmo, "SJF") == 0) {
+    if (strcmp(algoritmo, "SJF") == 0) {
         self->algoritmo_init = inicializar_sjf;
         self->algoritmo_destroy = sjf_destroy;
         self->algoritmo_update_next_est_info = sjf_actualizar_info_para_siguiente_estimacion;
-    } else if(strcmp(algoritmo, "HRRN") == 0) {
+    } else if (strcmp(algoritmo, "HRRN") == 0) {
         self->algoritmo_init = inicializar_hrrn;
         self->algoritmo_destroy = hrrn_destroy;
         self->algoritmo_update_next_est_info = hrrn_actualizar_info_para_siguiente_estimacion;
@@ -91,7 +91,7 @@ void pcb_destroy(t_pcb* pcb) {
     free(pcb);
 }
 
-void sjf_actualizar_estimacion_actual(t_pcb *pcb, double realAnterior, double estAnterior) {
+void sjf_actualizar_estimacion_actual(t_pcb* pcb, double realAnterior, double estAnterior) {
     pcb->sjf->estActual = media_exponencial(realAnterior, estAnterior);
 }
 
@@ -119,7 +119,7 @@ t_recurso_sem* recurso_sem_create(char* nombre, int32_t valor) {
 bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
     sem->valorActual--;
     bool esBloqueante = sem->valorActual < 0;
-    if(esBloqueante) {
+    if (esBloqueante) {
         pcbWait->deadlockInfo->esperaEnSemaforo = sem;
         queue_push(sem->colaPCBs, pcbWait);
     } else {
@@ -132,7 +132,7 @@ t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
     sem->valorActual++;
     t_pcb* primerPCB = NULL;
     liberar_una_instancia_del_semaforo(pcbPost, sem);
-    if(sem->valorActual <= 0) {
+    if (sem->valorActual <= 0) {
         primerPCB = queue_pop(sem->colaPCBs);
         primerPCB->deadlockInfo->esperaEnSemaforo = NULL;
         retener_una_instancia_del_semaforo(primerPCB, sem);
@@ -144,11 +144,11 @@ void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     pthread_mutex_lock(&(pcb->deadlockInfo->mutexDict));
     t_dictionary* dict = pcb->deadlockInfo->semaforosQueRetiene;
     int32_t* valorActual = NULL;
-    if(dictionary_has_key(dict, sem->nombre)) {
-        valorActual = (int32_t*) dictionary_get(dict, sem->nombre);
+    if (dictionary_has_key(dict, sem->nombre)) {
+        valorActual = (int32_t*)dictionary_get(dict, sem->nombre);
         (*valorActual)--;
         dictionary_put(dict, sem->nombre, valorActual);
-        if(*valorActual == 0) {
+        if (*valorActual == 0) {
             valorActual = dictionary_remove(dict, sem->nombre);
             free(valorActual);
         }
@@ -158,8 +158,8 @@ void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
 
 void retener_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     int32_t* valorActual = NULL;
-    if(dictionary_has_key(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre)) {
-        valorActual = (int32_t*) dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
+    if (dictionary_has_key(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre)) {
+        valorActual = (int32_t*)dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
         (*valorActual)++;
     } else {
         valorActual = malloc(sizeof(*valorActual));
@@ -190,8 +190,8 @@ void cola_recursos_destroy(t_cola_recursos* colaRecursos) {
 }
 
 bool es_este_pcb(void* pcbVoid, void* pidVoid) {
-    t_pcb* pcb = (t_pcb*) pcbVoid;
-    uint32_t pid = *(uint32_t*) pidVoid;
+    t_pcb* pcb = (t_pcb*)pcbVoid;
+    uint32_t pid = *(uint32_t*)pidVoid;
     return *(pcb->socket) == pid;
 }
 
@@ -202,8 +202,8 @@ void* mayor_pid(void* pcbVoid1, void* pcbVoid2) {
 }
 
 bool eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
-    int index = list_get_index(lista, (void*) es_este_pcb, (void*) pcb->socket);
-    if(index != -1) {
+    int index = list_get_index(lista, (void*)es_este_pcb, (void*)pcb->socket);
+    if (index != -1) {
         list_remove(lista, index);
         return true;
     }

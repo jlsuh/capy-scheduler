@@ -1,13 +1,12 @@
 #ifndef KERNEL_STRUCTS_H_INCLUDED
 #define KERNEL_STRUCTS_H_INCLUDED
 
-#include <pthread.h>
-#include <semaphore.h>
-#include <stdint.h>
-
 #include <commons/collections/dictionary.h>
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdint.h>
 
 typedef enum {
     OK_CONTINUE,

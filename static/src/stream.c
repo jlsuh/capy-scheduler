@@ -25,7 +25,7 @@ void recv_empty_buffer(int socket) {
 }
 
 void* get_stream_to_send(uint32_t opCode, t_buffer* buffer) {
-    void *toSend = malloc(sizeof(opCode) + sizeof(buffer->size) + buffer->size);
+    void* toSend = malloc(sizeof(opCode) + sizeof(buffer->size) + buffer->size);
     int offset = 0;
 
     memcpy(toSend + offset, &opCode, sizeof(opCode));
@@ -45,7 +45,7 @@ uint32_t get_op_code(int socket) {
 
 void get_buffer(int socket, t_buffer* destBuffer) {
     recv(socket, &(destBuffer->size), sizeof(destBuffer->size), 0);
-    if(destBuffer->size > 0) {
+    if (destBuffer->size > 0) {
         destBuffer->stream = malloc(destBuffer->size);
         recv(socket, destBuffer->stream, destBuffer->size, 0);
     }
@@ -58,13 +58,13 @@ void* stream_deserialize(int socket) {
 
     void* deserialized = NULL;
     switch (opCode) {
-    case STRING:
-        deserialized = buffer_unpack_string(buffer);
-        break;
-    default:
-        puts("Non valid OpCode");
-        break;
+        case STRING:
+            deserialized = buffer_unpack_string(buffer);
+            break;
+        default:
+            puts("Non valid OpCode");
+            break;
     }
     buffer_destroy(buffer);
-    return deserialized; // Ante eventual falla retorna NULL
+    return deserialized;  // Ante eventual falla retorna NULL
 }

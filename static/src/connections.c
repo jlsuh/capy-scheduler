@@ -5,10 +5,10 @@ int iniciar_servidor(char* ip, char* port) {
     struct addrinfo hints;
     struct addrinfo* serverInfo;
 
-    memset(&hints, 0, sizeof(hints));   // make sure the struct is empty
-    hints.ai_family = AF_UNSPEC;        // don't care IPv4 or IPv6
-    hints.ai_socktype = SOCK_STREAM;    // TCP stream sockets
-    hints.ai_flags = AI_PASSIVE;        // fill in my IP for me
+    memset(&hints, 0, sizeof(hints));  // make sure the struct is empty
+    hints.ai_family = AF_UNSPEC;       // don't care IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM;   // TCP stream sockets
+    hints.ai_flags = AI_PASSIVE;       // fill in my IP for me
 
     int rv = getaddrinfo(ip, port, &hints, &serverInfo);
     if (rv != 0) {
@@ -51,28 +51,28 @@ int conectar_a_servidor(char* ip, char* port) {
     struct addrinfo* serverInfo;
     struct addrinfo* p;
 
-    memset(&hints, 0, sizeof(hints));   // make sure the struct is empty
-    hints.ai_family = AF_UNSPEC;        // don't care IPv4 or IPv6
-    hints.ai_socktype = SOCK_STREAM;    // TCP stream sockets
-    hints.ai_flags = AI_PASSIVE;        // fill in my IP for me
+    memset(&hints, 0, sizeof(hints));  // make sure the struct is empty
+    hints.ai_family = AF_UNSPEC;       // don't care IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM;   // TCP stream sockets
+    hints.ai_flags = AI_PASSIVE;       // fill in my IP for me
 
     int rv = getaddrinfo(ip, port, &hints, &serverInfo);
     if (rv != 0) {
         fprintf(stderr, "getaddrinfo error: %s", gai_strerror(rv));
         return EXIT_FAILURE;
     }
-    for(p = serverInfo; p != NULL; p = p->ai_next) {
+    for (p = serverInfo; p != NULL; p = p->ai_next) {
         conn = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if(conn == -1) {
+        if (conn == -1) {
             continue;
         }
-        if(connect(conn, p->ai_addr, p->ai_addrlen) != -1) {
+        if (connect(conn, p->ai_addr, p->ai_addrlen) != -1) {
             break;
         }
         close(conn);
     }
     freeaddrinfo(serverInfo);
-    if(conn != -1 && p != NULL) {
+    if (conn != -1 && p != NULL) {
         return conn;
     }
     return -1;

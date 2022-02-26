@@ -2,9 +2,8 @@
 #define STREAM_CONNECTIONS_TEST_H_INCLUDED
 
 #include <CUnit/Basic.h>
-#include <sys/types.h>
-
 #include <commons/config.h>
+#include <sys/types.h>
 
 #include "connections.h"
 #include "stream.h"

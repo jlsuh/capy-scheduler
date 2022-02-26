@@ -7,13 +7,13 @@ bool es_deploy_mode(void) {
 void enviar_memalloc_a_memoria(t_pcb* pcb, t_buffer* buffer) {
     int32_t const memSocket = kernel_config_get_mem_socket(kernelCfg);
     pthread_mutex_lock(&mutexMemSocket);
-    if(es_deploy_mode()) {
+    if (es_deploy_mode()) {
         buffer_send(buffer, MEM_ALLOC, memSocket);
         log_info(kernelLogger, "MEM_ALLOC <Carpincho %d>: Carpincho->Memoria exitosa", pcb->pid);
 
         uint32_t response = get_op_code(memSocket);
 
-        if(response == OK_CONTINUE) {
+        if (response == OK_CONTINUE) {
             t_buffer* responseBuffer = buffer_create();
             get_buffer(memSocket, responseBuffer);
             buffer_send(responseBuffer, OK_CONTINUE, *(pcb->socket));
@@ -39,13 +39,13 @@ void enviar_memalloc_a_memoria(t_pcb* pcb, t_buffer* buffer) {
 void enviar_memwrite_a_memoria(t_pcb* pcb, t_buffer* buffer) {
     int32_t const memSocket = kernel_config_get_mem_socket(kernelCfg);
     pthread_mutex_lock(&mutexMemSocket);
-    if(es_deploy_mode()) {
+    if (es_deploy_mode()) {
         buffer_send(buffer, MEM_WRITE, memSocket);
         log_info(kernelLogger, "MEM_WRITE <Carpincho %d>: Carpincho->Memoria exitosa", pcb->pid);
 
         uint32_t response = get_op_code(memSocket);
 
-        if(response == OK_CONTINUE) {
+        if (response == OK_CONTINUE) {
             t_buffer* responseBuffer = buffer_create();
             get_buffer(memSocket, responseBuffer);
             buffer_send(responseBuffer, OK_CONTINUE, *(pcb->socket));
@@ -78,13 +78,13 @@ void enviar_memwrite_a_memoria(t_pcb* pcb, t_buffer* buffer) {
 void enviar_memread_a_memoria(t_pcb* pcb, t_buffer* buffer) {
     int32_t const memSocket = kernel_config_get_mem_socket(kernelCfg);
     pthread_mutex_lock(&mutexMemSocket);
-    if(es_deploy_mode()) {
+    if (es_deploy_mode()) {
         buffer_send(buffer, MEM_READ, memSocket);
         log_info(kernelLogger, "MEM_READ <Carpincho %d>: Carpincho->Memoria exitosa", pcb->pid);
 
         uint32_t response = get_op_code(memSocket);
 
-        if(response == OK_CONTINUE) {
+        if (response == OK_CONTINUE) {
             t_buffer* responseBuffer = buffer_create();
             get_buffer(memSocket, responseBuffer);
             buffer_send(responseBuffer, OK_CONTINUE, *(pcb->socket));
@@ -113,14 +113,14 @@ void enviar_memread_a_memoria(t_pcb* pcb, t_buffer* buffer) {
 void enviar_memfree_a_memoria(t_pcb* pcb, t_buffer* buffer) {
     int32_t const memSocket = kernel_config_get_mem_socket(kernelCfg);
     pthread_mutex_lock(&mutexMemSocket);
-    if(es_deploy_mode()) {
+    if (es_deploy_mode()) {
         buffer_send(buffer, MEM_FREE, memSocket);
         log_info(kernelLogger, "MEM_FREE <Carpincho %d>: Carpincho->Memoria exitosa", pcb->pid);
 
         uint32_t response = get_op_code(memSocket);
         recv_empty_buffer(memSocket);
 
-        if(response == OK_CONTINUE) {
+        if (response == OK_CONTINUE) {
             send_empty_buffer(OK_CONTINUE, *(pcb->socket));
             log_info(kernelLogger, "MEM_FREE <Carpincho %d>: Memoria->Carpincho exitosa", pcb->pid);
         } else {
@@ -141,14 +141,14 @@ void enviar_memfree_a_memoria(t_pcb* pcb, t_buffer* buffer) {
 void enviar_mate_close_a_memoria(t_pcb* pcb) {
     int32_t const memSocket = kernel_config_get_mem_socket(kernelCfg);
     pthread_mutex_lock(&mutexMemSocket);
-    if(es_deploy_mode()) {
+    if (es_deploy_mode()) {
         t_buffer* closeBuffer = buffer_create();
         buffer_pack(closeBuffer, &(pcb->pid), sizeof(pcb->pid));
         buffer_send(closeBuffer, MATE_CLOSE, memSocket);
 
         uint32_t response = get_op_code(memSocket);
 
-        if(response == OK_CONTINUE) {
+        if (response == OK_CONTINUE) {
             recv_empty_buffer(memSocket);
         } else {
             log_error(kernelLogger, "EXIT: Error al intentar finalizar Carpincho ID %d de Memoria", pcb->pid);
@@ -161,7 +161,7 @@ void enviar_mate_close_a_memoria(t_pcb* pcb) {
 
 void enviar_suspension_de_carpincho_a_memoria(t_pcb* pcb) {
     int32_t const memSocket = kernel_config_get_mem_socket(kernelCfg);
-    if(es_deploy_mode()) {
+    if (es_deploy_mode()) {
         pthread_mutex_lock(&mutexMemSocket);
         t_buffer* closeBuffer = buffer_create();
         buffer_pack(closeBuffer, &(pcb->pid), sizeof(pcb->pid));
@@ -169,7 +169,7 @@ void enviar_suspension_de_carpincho_a_memoria(t_pcb* pcb) {
 
         uint32_t response = get_op_code(memSocket);
 
-        if(response == OK_CONTINUE) {
+        if (response == OK_CONTINUE) {
             recv_empty_buffer(memSocket);
         } else {
             log_error(kernelLogger, "Suspensión: Error al intentar suspender un Carpincho ID %d de Memoria", pcb->pid);

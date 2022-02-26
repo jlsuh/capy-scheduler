@@ -1,5 +1,24 @@
 #include "kernel.h"
 
+#include <commons/log.h>
+#include <commons/string.h>
+#include <sys/socket.h>
+
+#include "connections.h"
+#include "kernel_config.h"
+#include "kernel_structs.h"
+#include "scheduler.h"
+#include "stream.h"
+
+#define KERNEL_LOG_DEST "bin/kernel.log"
+#define KERNEL_MODULE_NAME "Kernel"
+
+t_log* kernelLogger;
+t_kernel_config* kernelCfg;
+
+void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t len);
+void crear_hilo_handler_conexion_entrante(int* socket);
+
 int main(int argc, char* argv[]) {
     bool activeConsole = true;
     kernelLogger = log_create(KERNEL_LOG_DEST, KERNEL_MODULE_NAME, activeConsole, LOG_LEVEL_INFO);
@@ -30,7 +49,7 @@ int main(int argc, char* argv[]) {
             send_empty_buffer(OK_CONTINUE, memSocket);
             log_info(kernelLogger, "Kernel: Memoria establece conexión con Kernel en socket ID %d", memSocket);
         } else {
-            send_empty_buffer(FAIL, memSocket); /* kernelCfg->MEMORIA_SOCKET es entidad conectante pero no es Memoria */
+            send_empty_buffer(FAIL, memSocket); /* Es entidad conectante pero no es Memoria */
             log_error(kernelLogger, "Kernel: Error al intentar establecer conexión con Módulo Memoria");
             liberar_modulo_kernel(kernelLogger, kernelCfg);
             exit(0);

@@ -1,12 +1,11 @@
 #ifndef COMMON_UTILS_H_INCLUDED
 #define COMMON_UTILS_H_INCLUDED
 
-#include <stdlib.h>
-
 #include <commons/collections/list.h>
 #include <commons/config.h>
 #include <commons/log.h>
 #include <commons/string.h>
+#include <stdlib.h>
 
 #include "kernel_structs.h"
 
