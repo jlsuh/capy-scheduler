@@ -17,9 +17,9 @@ static sem_t suspensionConcluida;
 static sem_t hayPCBsParaAgregarAlSistema;
 static sem_t transicionarSusReadyAready;
 
+pthread_mutex_t mutexMemSocket;
 static pthread_mutex_t mutexDeadlock;
 static pthread_mutex_t mutexPid;
-pthread_mutex_t mutexMemSocket;
 
 static t_cola_planificacion* pcbsNew;
 static t_cola_planificacion* pcbsReady;

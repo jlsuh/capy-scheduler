@@ -2,7 +2,7 @@
 #define MEM_ADAPTER_H_INCLUDED
 
 #include <commons/log.h>
-#include <stdio.h>
+#include <stdbool.h>
 
 #include "buffer.h"
 #include "kernel.h"
@@ -14,7 +14,6 @@ extern t_log *kernelLogger;
 extern t_kernel_config *kernelCfg;
 extern pthread_mutex_t mutexMemSocket;
 
-bool es_deploy_mode(void);
 void enviar_mate_close_a_memoria(t_pcb *pcb);
 void enviar_memalloc_a_memoria(t_pcb *pcb, t_buffer *buffer);
 void enviar_memfree_a_memoria(t_pcb *pcb, t_buffer *buffer);

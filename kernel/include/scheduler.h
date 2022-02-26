@@ -3,12 +3,13 @@
 
 #include <commons/log.h>
 #include <commons/string.h>
+#include <stdbool.h>
 
-#include "buffer.h"
 #include "common_utils.h"
 #include "kernel_config.h"
 #include "kernel_structs.h"
 #include "mem_adapter.h"
+#include "scheduler.h"
 #include "stream.h"
 
 extern t_log *kernelLogger;

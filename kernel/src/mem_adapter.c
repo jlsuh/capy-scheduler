@@ -1,6 +1,6 @@
 #include "mem_adapter.h"
 
-bool es_deploy_mode(void) {
+static bool es_deploy_mode(void) {
     return strcmp(EXEC_MODE, "DEPLOY_MODE") == 0;
 }
 

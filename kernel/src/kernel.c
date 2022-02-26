@@ -2,6 +2,7 @@
 
 #include <commons/log.h>
 #include <commons/string.h>
+#include <stdnoreturn.h>
 #include <sys/socket.h>
 
 #include "connections.h"
@@ -16,8 +17,8 @@
 t_log* kernelLogger;
 t_kernel_config* kernelCfg;
 
-void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t len);
-void crear_hilo_handler_conexion_entrante(int* socket);
+static noreturn void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t);
+static void crear_hilo_handler_conexion_entrante(int* socket);
 
 int main(int argc, char* argv[]) {
     bool activeConsole = true;
@@ -64,7 +65,7 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t len) {
+static noreturn void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t len) {
     log_info(kernelLogger, "Kernel: A la escucha de nuevas conexiones en puerto %d", socketEscucha);
     int* socketCliente;
     for (;;) {
@@ -78,7 +79,7 @@ void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, sockl
     }
 }
 
-void crear_hilo_handler_conexion_entrante(int* socket) {
+static void crear_hilo_handler_conexion_entrante(int* socket) {
     pthread_t threadSuscripcion;
     pthread_create(&threadSuscripcion, NULL, encolar_en_new_nuevo_carpincho_entrante, (void*)socket);
     pthread_detach(threadSuscripcion);
