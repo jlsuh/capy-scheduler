@@ -39,18 +39,6 @@ void recurso_sem_destroy(t_recurso_sem* unSemaforo) {
     free(unSemaforo);
 }
 
-t_queue* recurso_sem_get_cola_pcbs(t_recurso_sem* self) {
-    return self->colaPCBs;
-}
-
-char* recurso_sem_get_nombre(t_recurso_sem* self) {
-    return self->nombre;
-}
-
-int32_t recurso_sem_get_valor_actual(t_recurso_sem* self) {
-    return self->valorActual;
-}
-
 void recurso_sem_inc_cant_instancias(t_recurso_sem* self) {
     self->valorActual++;
 }
@@ -67,16 +55,28 @@ bool recurso_sem_hay_pcbs_bloqueados(t_recurso_sem* self) {
     return self->valorActual <= 0;
 }
 
+bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
+    t_recurso_sem* self = recursoSemVoid;
+    char* nombre = nombreVoid;
+    return string_equals_ignore_case(self->nombre, nombre);
+}
+
+t_queue* recurso_sem_get_cola_pcbs(t_recurso_sem* self) {
+    return self->colaPCBs;
+}
+
+char* recurso_sem_get_nombre(t_recurso_sem* self) {
+    return self->nombre;
+}
+
+int32_t recurso_sem_get_valor_actual(t_recurso_sem* self) {
+    return self->valorActual;
+}
+
 pthread_mutex_t* recurso_sem_get_mutex_cola_pcbs(t_recurso_sem* self) {
     return self->mutexColaPCBs;
 }
 
 pthread_mutex_t* recurso_sem_get_mutex_valor_sem(t_recurso_sem* self) {
     return self->mutexValorSemaforo;
-}
-
-bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
-    t_recurso_sem* self = recursoSemVoid;
-    char* nombre = nombreVoid;
-    return string_equals_ignore_case(self->nombre, nombre);
 }
