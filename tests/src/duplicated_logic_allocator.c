@@ -13,7 +13,7 @@ double get_diferencial_de_tiempo(clock_t tiempoFinal, clock_t tiempoInicial) {
     return (double)(tiempoFinal - tiempoInicial) / CLOCKS_PER_SEC;
 }
 
-double media_exponencial(double realAnterior, double estAnterior) {
+double __media_exponencial(double realAnterior, double estAnterior) {
     // Est(n) = α . R(n-1) + (1 - α) . Est(n-1)
     return ALFA * realAnterior + (1 - ALFA) * estAnterior;
 }
@@ -70,7 +70,7 @@ t_pcb* sjf_pcb_menor_estimacion_entre(t_pcb* unPcb, t_pcb* otroPcb) {
 
 void hrrn_actualizar_info_para_siguiente_estimacion(t_pcb* pcb, clock_t tiempoFinal, clock_t tiempoInicial) {
     double realAnterior = get_diferencial_de_tiempo(tiempoFinal, tiempoInicial);
-    pcb->hrrn->s = media_exponencial(realAnterior, pcb->hrrn->s);
+    pcb->hrrn->s = __media_exponencial(realAnterior, pcb->hrrn->s);
     pcb->hrrn->w = clock();
 }
 
@@ -81,7 +81,7 @@ void hrrn_destroy(t_pcb* pcb) {
 
 void inicializar_hrrn(t_pcb* pcb) {
     pcb->hrrn = malloc(sizeof(*(pcb->hrrn)));
-    pcb->hrrn->s = media_exponencial(0, ESTIMACION_INICIAL);
+    pcb->hrrn->s = __media_exponencial(0, ESTIMACION_INICIAL);
     pcb->hrrn->w = clock();
 }
 
@@ -98,7 +98,7 @@ void pcb_destroy(t_pcb* pcb) {
 }
 
 void sjf_actualizar_estimacion_actual(t_pcb* pcb, double realAnterior, double estAnterior) {
-    pcb->sjf->estActual = media_exponencial(realAnterior, estAnterior);
+    pcb->sjf->estActual = __media_exponencial(realAnterior, estAnterior);
 }
 
 void sjf_actualizar_info_para_siguiente_estimacion(t_pcb* pcb, clock_t tiempoFinal, clock_t tiempoInicial) {

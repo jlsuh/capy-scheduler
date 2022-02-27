@@ -22,8 +22,13 @@ struct t_pcb {
 
 extern t_kernel_config *kernelCfg;
 
-t_deadlock *pcb_get_deadlock_info(t_pcb *self) {
-    return self->deadlockInfo;
+static double __time_differential(time_t tiempoFinal, time_t tiempoInicial) {
+    double diferencialT = difftime(tiempoFinal, tiempoInicial);
+    return diferencialT;
+}
+
+uint32_t *pcb_get_socket(t_pcb *self) {
+    return self->socket;
 }
 
 uint32_t pcb_get_pid(t_pcb *self) {
@@ -34,8 +39,8 @@ t_status pcb_get_status(t_pcb *self) {
     return self->status;
 }
 
-uint32_t *pcb_get_socket(t_pcb *self) {
-    return self->socket;
+t_deadlock *pcb_get_deadlock_info(t_pcb *self) {
+    return self->deadlockInfo;
 }
 
 void pcb_algoritmo_destroy(t_pcb *self) {
@@ -54,42 +59,14 @@ void pcb_set_status(t_pcb *self, t_status newStatus) {
     self->status = newStatus;
 }
 
-t_sjf *pcb_get_sjf(t_pcb *self) {
-    return self->sjf;
-}
-
-void pcb_set_sjf(t_pcb *self, t_sjf *sjf) {
-    self->sjf = sjf;
-}
-
-void pcb_set_est_actual(t_pcb *self, double newEstActual) {
-    self->sjf->estActual = newEstActual;
-}
-
-void pcb_sjf_create(t_pcb *self) {
+static void __pcb_sjf_create(t_pcb *self) {
     self->sjf = malloc(sizeof(t_sjf));
     self->sjf->estActual = kernel_config_get_est_inicial(kernelCfg);
 }
 
-void pcb_hrrn_create(t_pcb *self) {
+static void __pcb_hrrn_create(t_pcb *self) {
     self->hrrn = malloc(sizeof(*(self->hrrn)));
     self->hrrn->s = kernel_config_get_est_inicial(kernelCfg);
-    time(&(self->hrrn->w));
-}
-
-void pcb_set_service_time(t_pcb *self, double newServiceTime) {
-    self->hrrn->s = newServiceTime;
-}
-
-double pcb_get_service_time(t_pcb *self) {
-    return self->hrrn->s;
-}
-
-double pcb_get_waiting_time(t_pcb *self) {
-    return self->hrrn->w;
-}
-
-void pcb_set_waiting_time(t_pcb *self) {
     time(&(self->hrrn->w));
 }
 
@@ -100,42 +77,37 @@ void pcb_destroy(t_pcb *self) {
     free(self);
 }
 
-void pcb_sjf_destroy(t_pcb *pcb) {
+static void __pcb_sjf_destroy(t_pcb *pcb) {
     free(pcb->sjf);
     pcb_destroy(pcb);
 }
 
-void pcb_hrrn_destroy(t_pcb *pcb) {
+static void __pcb_hrrn_destroy(t_pcb *pcb) {
     free(pcb->hrrn);
     pcb_destroy(pcb);
 }
 
-double get_diferencial_de_tiempo(time_t tiempoFinal, time_t tiempoInicial) {
-    double diferencialT = difftime(tiempoFinal, tiempoInicial);
-    return diferencialT;
-}
-
 double response_ratio(t_pcb *pcb, time_t now) {
-    return get_diferencial_de_tiempo(now, pcb_get_waiting_time(pcb)) / pcb_get_service_time(pcb) + 1;
+    return __time_differential(now, pcb->hrrn->w) / pcb->hrrn->s + 1;
 }
 
-double media_exponencial(double realAnterior, double estAnterior) {
+static double __media_exponencial(double realAnterior, double estAnterior) {
     /* Est(n) = α . R(n-1) + (1 - α) . Est(n-1) */
     double const alfa = kernel_config_get_alfa(kernelCfg);
     return alfa * realAnterior + (1 - alfa) * estAnterior;
 }
 
-void pcb_sjf_est_update(t_pcb *pcb, time_t tiempoFinal, time_t tiempoInicial) {
-    double realAnterior = get_diferencial_de_tiempo(tiempoFinal, tiempoInicial);
-    double newEstActual = media_exponencial(realAnterior, pcb_get_sjf(pcb)->estActual);
-    pcb_set_est_actual(pcb, newEstActual);
+static void __pcb_sjf_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempoInicial) {
+    double realAnterior = __time_differential(tiempoFinal, tiempoInicial);
+    double newEstActual = __media_exponencial(realAnterior, self->sjf->estActual);
+    self->sjf->estActual = newEstActual;
 }
 
-void pcb_hrrn_est_update(t_pcb *pcb, time_t tiempoFinal, time_t tiempoInicial) {
-    double realAnterior = get_diferencial_de_tiempo(tiempoFinal, tiempoInicial);
-    double newServiceTime = media_exponencial(realAnterior, pcb_get_service_time(pcb));
-    pcb_set_service_time(pcb, newServiceTime);
-    pcb_set_waiting_time(pcb);
+static void __pcb_hrrn_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempoInicial) {
+    double realAnterior = __time_differential(tiempoFinal, tiempoInicial);
+    double newServiceTime = __media_exponencial(realAnterior, self->hrrn->s);
+    self->hrrn->s = newServiceTime;
+    time(&(self->hrrn->w));
 }
 
 bool pcb_is_sjf(void) {
@@ -154,13 +126,13 @@ t_pcb *pcb_create(uint32_t *socket, uint32_t pid) {
     self->sjf = NULL;
     self->hrrn = NULL;
     if (pcb_is_sjf()) {
-        self->algoritmo_init = pcb_sjf_create;
-        self->algoritmo_destroy = pcb_sjf_destroy;
-        self->algoritmo_update_next_est_info = pcb_sjf_est_update;
+        self->algoritmo_init = __pcb_sjf_create;
+        self->algoritmo_destroy = __pcb_sjf_destroy;
+        self->algoritmo_update_next_est_info = __pcb_sjf_est_update;
     } else if (pcb_is_hrrn()) {
-        self->algoritmo_init = pcb_hrrn_create;
-        self->algoritmo_destroy = pcb_hrrn_destroy;
-        self->algoritmo_update_next_est_info = pcb_hrrn_est_update;
+        self->algoritmo_init = __pcb_hrrn_create;
+        self->algoritmo_destroy = __pcb_hrrn_destroy;
+        self->algoritmo_update_next_est_info = __pcb_hrrn_est_update;
     }
     self->deadlockInfo = malloc(sizeof(*(self->deadlockInfo)));
     self->deadlockInfo->esperaEnSemaforo = NULL;
@@ -169,6 +141,6 @@ t_pcb *pcb_create(uint32_t *socket, uint32_t pid) {
     return self;
 }
 
-t_pcb *pcb_minimum_est(t_pcb *aPcb, t_pcb *anotherPcb) {
-    return pcb_get_sjf(aPcb)->estActual <= pcb_get_sjf(anotherPcb)->estActual ? aPcb : anotherPcb;
+t_pcb *pcb_minimum_est(t_pcb *aPCB, t_pcb *anotherPCB) {
+    return aPCB->sjf->estActual <= anotherPCB->sjf->estActual ? aPCB : anotherPCB;
 }
