@@ -86,11 +86,11 @@ void test_list_get_index(void) {
     list_add(list, pcb3);
     list_add(list, pcb2);
 
-    int index = list_get_index(list, es_este_pcb, pid1);
+    int index = list_get_index(list, __es_este_pcb, pid1);
     CU_ASSERT_EQUAL(index, 0);
-    index = list_get_index(list, es_este_pcb, pid2);
+    index = list_get_index(list, __es_este_pcb, pid2);
     CU_ASSERT_EQUAL(index, 2);
-    index = list_get_index(list, es_este_pcb, pid3);
+    index = list_get_index(list, __es_este_pcb, pid3);
     CU_ASSERT_EQUAL(index, 1);
 
     list_destroy(list);
@@ -107,7 +107,7 @@ void test_eliminar_un_elemento_de_la_lista_de_una_queue(void) {
 
     queue_push(queue, pcb1);
 
-    eliminar_pcb_de_lista(pcb1, queue->elements);
+    __eliminar_pcb_de_lista(pcb1, queue->elements);
 
     CU_ASSERT_TRUE(queue_is_empty(queue));
 

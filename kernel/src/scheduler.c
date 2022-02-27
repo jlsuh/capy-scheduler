@@ -727,16 +727,18 @@ static t_pcb* pop_primer_pcb_de_cola_semaforo(t_recurso_sem* sem) {
 
 void retener_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     int32_t* valorActual = NULL;
-    pthread_mutex_lock(&(pcb_get_deadlock_info(pcb)->mutexDict));
-    if (dictionary_has_key(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre)) {
-        valorActual = (int32_t*)dictionary_get(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre);
+    t_deadlock* info = pcb_get_deadlock_info(pcb);
+    pthread_mutex_lock(deadlock_get_dict_mutex(info));
+    t_dictionary* dict = deadlock_get_dict(info);
+    if (dictionary_has_key(dict, sem->nombre)) {
+        valorActual = (int32_t*)dictionary_get(dict, sem->nombre);
         (*valorActual)++;
     } else {
         valorActual = malloc(sizeof(*valorActual));
         *valorActual = 1;
     }
-    dictionary_put(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre, valorActual);
-    pthread_mutex_unlock(&(pcb_get_deadlock_info(pcb)->mutexDict));
+    dictionary_put(dict, sem->nombre, valorActual);
+    pthread_mutex_unlock(deadlock_get_dict_mutex(info));
 }
 
 bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
@@ -749,7 +751,7 @@ bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
         dequeue_pcb(pcbWait, pcbsExec);
 
         pcb_set_status(pcbWait, BLOCKED);
-        pcb_get_deadlock_info(pcbWait)->esperaEnSemaforo = sem;
+        deadlock_set_semaforo_en_que_espera(pcb_get_deadlock_info(pcbWait), sem);
         encolar_pcb_al_semaforo(pcbWait, sem);
         enqueue_pcb(pcbWait, pcbsBlocked);
 
@@ -763,8 +765,9 @@ bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
 }
 
 void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
-    pthread_mutex_lock(&(pcb_get_deadlock_info(pcb)->mutexDict));
-    t_dictionary* dict = pcb_get_deadlock_info(pcb)->semaforosQueRetiene;
+    t_deadlock* info = pcb_get_deadlock_info(pcb);
+    pthread_mutex_lock(deadlock_get_dict_mutex(info));
+    t_dictionary* dict = deadlock_get_dict(info);
     int32_t* valorActual = NULL;
     if (dictionary_has_key(dict, sem->nombre)) {
         valorActual = (int32_t*)dictionary_get(dict, sem->nombre);
@@ -775,7 +778,7 @@ void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
             free(valorActual);
         }
     }
-    pthread_mutex_unlock(&(pcb_get_deadlock_info(pcb)->mutexDict));
+    pthread_mutex_unlock(deadlock_get_dict_mutex(info));
 }
 
 t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
@@ -797,7 +800,7 @@ t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
             } else if (pcbCurrStatus == BLOCKED) { /* Viene de BLOCKED => hay que eliminarlo de la lista general de bloqueados */
                 pasar_de_blocked_a_ready(primerPCB);
             }
-            pcb_get_deadlock_info(primerPCB)->esperaEnSemaforo = NULL;
+            deadlock_set_semaforo_en_que_espera(pcb_get_deadlock_info(primerPCB), NULL);
             retener_una_instancia_del_semaforo(primerPCB, sem);
         }
     }

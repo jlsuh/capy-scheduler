@@ -19,7 +19,6 @@ void inicializar_sjf(t_pcb *pcb);
 void iniciar_planificacion(void);
 void liberar_una_instancia_del_semaforo(t_pcb *pcb, t_recurso_sem *sem);
 void log_transition(const char *entityName, const char *prev, const char *post, int pid);
-void pcb_destroy(t_pcb *pcb);
 void recurso_sem_destroy(t_recurso_sem *unSemaforo);
 void retener_una_instancia_del_semaforo(t_pcb *pcb, t_recurso_sem *sem);
 

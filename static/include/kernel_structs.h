@@ -68,12 +68,6 @@ typedef struct {
 } t_recurso_io;
 
 typedef struct {
-    t_dictionary *semaforosQueRetiene;
-    t_recurso_sem *esperaEnSemaforo;
-    pthread_mutex_t mutexDict;
-} t_deadlock;
-
-typedef struct {
     t_list *lista;
     sem_t instanciasDisponibles;
     pthread_mutex_t mutex;

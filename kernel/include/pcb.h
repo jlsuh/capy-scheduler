@@ -1,6 +1,7 @@
 #ifndef PCB_H_INCLUDED
 #define PCB_H_INCLUDED
 
+#include "deadlock.h"
 #include "kernel_structs.h"
 
 typedef struct t_pcb t_pcb;
@@ -29,5 +30,7 @@ void pcb_algoritmo_init(t_pcb *);
 void pcb_algoritmo_update_next_est_info(t_pcb *, time_t end, time_t start);
 void pcb_destroy(t_pcb *);
 void pcb_set_status(t_pcb *, t_status newStatus);
+bool pcb_espera_algun_semaforo(void *pcbVoid);
+void *pcb_maximum_pid(void *aPCBVoid, void *anotherPCBVoid);
 
 #endif

@@ -6,8 +6,8 @@
 
 #include "kernel_structs.h"
 
-bool eliminar_pcb_de_lista(t_pcb *pcb, t_list *lista);
-bool es_este_pcb(void *pcbVoid, void *pidVoid);
+bool __eliminar_pcb_de_lista(t_pcb *pcb, t_list *lista);
+bool __es_este_pcb(void *pcbVoid, void *pidVoid);
 bool kernel_sem_wait(t_recurso_sem *sem, t_pcb *pcbWait);
 double get_diferencial_de_tiempo(clock_t tiempoFinal, clock_t tiempoInicial);
 double __media_exponencial(double realAnterior, double estAnterior);
@@ -19,7 +19,7 @@ t_pcb *kernel_sem_post(t_recurso_sem *sem, t_pcb *pcbPost);
 t_pcb *pcb_create(uint32_t *pid, const char *algoritmo);
 t_pcb *sjf_pcb_menor_estimacion_entre(t_pcb *unPcb, t_pcb *otroPcb);
 t_recurso_sem *recurso_sem_create(char *nombre, int32_t valor);
-void *mayor_pid(void *pcbVoid1, void *pcbVoid2);
+void *pcb_maximum_pid(void *pcbVoid1, void *pcbVoid2);
 void cola_recursos_destroy(t_cola_recursos *colaRecursos);
 void hrrn_actualizar_info_para_siguiente_estimacion(t_pcb *pcb, clock_t tiempoFinal, clock_t tiempoInicial);
 void hrrn_destroy(t_pcb *pcb);

@@ -87,18 +87,20 @@ t_pcb *pcb_create(uint32_t *socket, uint32_t pid) {
         self->algoritmo_destroy = __pcb_hrrn_destroy;
         self->algoritmo_update_next_est_info = __pcb_hrrn_est_update;
     }
-    self->deadlockInfo = malloc(sizeof(*(self->deadlockInfo)));
-    self->deadlockInfo->esperaEnSemaforo = NULL;
-    self->deadlockInfo->semaforosQueRetiene = dictionary_create();
-    pthread_mutex_init(&(self->deadlockInfo->mutexDict), NULL);
+    self->deadlockInfo = deadlock_create();
     return self;
 }
 
 void pcb_destroy(t_pcb *self) {
     free(self->socket);
-    dictionary_destroy_and_destroy_elements(self->deadlockInfo->semaforosQueRetiene, free);
-    free(self->deadlockInfo);
+    deadlock_destroy(self->deadlockInfo);
     free(self);
+}
+
+void *pcb_maximum_pid(void *aPCBVoid, void *anotherPCBVoid) {
+    t_pcb *aPCB = aPCBVoid;
+    t_pcb *anotherPCB = anotherPCBVoid;
+    return pcb_get_pid(aPCB) > pcb_get_pid(anotherPCB) ? aPCB : anotherPCB;
 }
 
 t_pcb *pcb_minimum_est(t_pcb *aPCB, t_pcb *anotherPCB) {
@@ -111,6 +113,11 @@ bool pcb_is_hrrn(void) {
 
 bool pcb_is_sjf(void) {
     return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "SJF") == 0;
+}
+
+bool pcb_espera_algun_semaforo(void *pcbVoid) {
+    t_pcb *pcb = (t_pcb *)pcbVoid;
+    return deadlock_espera_en_semaforo(pcb->deadlockInfo);
 }
 
 double response_ratio(t_pcb *pcb, time_t now) {
