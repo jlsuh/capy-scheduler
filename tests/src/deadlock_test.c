@@ -197,7 +197,7 @@ static bool esta_reteniendo_instancias_del_semaforo(t_pcb* pcb, t_recurso_sem* s
     return dictionary_has_key(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
 }
 
-static bool __eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dimention_type firstToIterateType, t_list* pivotList) {
+static bool __deadlock_eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dimention_type firstToIterateType, t_list* pivotList) {
     /* Eliminar:
     - Procesos que no poseen retención o espera
     - Recursos que nadie retiene o espera
@@ -237,12 +237,12 @@ static bool __eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_d
     return list_size(firstToIterateList) < initInnerSize || list_size(pivotList) < initPivotSize;
 }
 
-static bool __reducir_matrices_de_deteccion(t_list* pcbsDeadlock, t_list* semsDeadlock) {
+static bool __deadlock_reducir_matrices_de_deteccion(t_list* pcbsDeadlock, t_list* semsDeadlock) {
     bool seEliminaronColumnas = true;
     bool seEliminaronFilas = true;
     while (seEliminaronColumnas || seEliminaronFilas) {
-        seEliminaronColumnas = __eliminar_celdas_nulas_consecutivas(pcbsDeadlock, PCB_LIST, semsDeadlock);
-        seEliminaronFilas = __eliminar_celdas_nulas_consecutivas(semsDeadlock, SEM_LIST, pcbsDeadlock);
+        seEliminaronColumnas = __deadlock_eliminar_celdas_nulas_consecutivas(pcbsDeadlock, PCB_LIST, semsDeadlock);
+        seEliminaronFilas = __deadlock_eliminar_celdas_nulas_consecutivas(semsDeadlock, SEM_LIST, pcbsDeadlock);
     }
     return !(list_size(pcbsDeadlock) == 0 && list_size(semsDeadlock) == 0);
 }
@@ -309,7 +309,7 @@ void test_es_posible_eliminar_columnas_y_filas_nulas_1(void) {
     CU_ASSERT_EQUAL(list_size(pcbsDeadlock), 5);
     CU_ASSERT_EQUAL(list_size(semsDeadlock), 7);
 
-    __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
 
     CU_ASSERT_EQUAL(list_size(pcbsDeadlock), 2);
     CU_ASSERT_EQUAL(list_size(semsDeadlock), 2);
@@ -337,7 +337,7 @@ void test_es_posible_eliminar_columnas_y_filas_nulas_2(void) {
     CU_ASSERT_EQUAL(list_size(pcbsDeadlock), 2);
     CU_ASSERT_EQUAL(list_size(semsDeadlock), 7);
 
-    __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
 
     CU_ASSERT_EQUAL(list_size(pcbsDeadlock), 2);
     CU_ASSERT_EQUAL(list_size(semsDeadlock), 2);
@@ -394,7 +394,7 @@ void test_es_posible_eliminar_columnas_y_filas_nulas_3(void) {
     CU_ASSERT_EQUAL(list_size(pcbsDeadlock), 5);
     CU_ASSERT_EQUAL(list_size(semsDeadlock), 4);
 
-    __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
 
     CU_ASSERT_EQUAL(list_size(pcbsDeadlock), 3);
     CU_ASSERT_EQUAL(list_size(semsDeadlock), 2);
@@ -414,7 +414,7 @@ static bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
     return string_equals_ignore_case(recursoSem->nombre, nombre);
 }
 
-static void __recuperarse_del_deadlock(t_list* pcbsDeadlock, t_list* semsDeadlock, t_list* semsList, t_list* pcbsBlocked /*, t_list* pcbsSusBlocked*/) {
+static void __deadlock_recuperarse_del_deadlock(t_list* pcbsDeadlock, t_list* semsDeadlock, t_list* semsList, t_list* pcbsBlocked /*, t_list* pcbsSusBlocked*/) {
     t_pcb* pcbDeMayorPID = list_get_maximum(pcbsDeadlock, pcb_maximum_pid);
     t_dictionary* semsQueRetienePCBDeMayorPID = pcbDeMayorPID->deadlockInfo->semaforosQueRetiene;
     for (int i = 0; i < list_size(semsList); i++) {
@@ -449,16 +449,16 @@ static void detectar_y_recuperarse_del_deadlock(t_list* pcbsBlocked, t_cola_recu
     print_awaiting_resources_matrix(pcbsDeadlock, semsDeadlock);
     print_alloced_resources_matrix(pcbsDeadlock, semsDeadlock);
 
-    bool existeDeadlock = __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    bool existeDeadlock = __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
 
     print_awaiting_resources_matrix(pcbsDeadlock, semsDeadlock);
     print_alloced_resources_matrix(pcbsDeadlock, semsDeadlock);
 
     while (existeDeadlock) {
-        __recuperarse_del_deadlock(pcbsDeadlock, semsDeadlock, semaforosDelSistema->listaRecursos, pcbsBlocked);
+        __deadlock_recuperarse_del_deadlock(pcbsDeadlock, semsDeadlock, semaforosDelSistema->listaRecursos, pcbsBlocked);
         print_awaiting_resources_matrix(pcbsDeadlock, semsDeadlock);
         print_alloced_resources_matrix(pcbsDeadlock, semsDeadlock);
-        existeDeadlock = __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+        existeDeadlock = __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
         print_awaiting_resources_matrix(pcbsDeadlock, semsDeadlock);
         print_alloced_resources_matrix(pcbsDeadlock, semsDeadlock);
     }
@@ -512,14 +512,14 @@ void test_deteccion_y_recuperacion_del_deadlock_1(void) {
     detectar_y_recuperarse_del_deadlock(pcbsBlocked, colaSems);
 
     /* t_list* pcbsDeadlock = list_filter(pcbsBlocked, pcb_espera_algun_semaforo);
-    bool existeDeadlock = __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    bool existeDeadlock = __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
     CU_ASSERT_TRUE(existeDeadlock);
     t_pcb* pcbDeMayorPID = list_get_maximum(pcbsDeadlock, pcb_maximum_pid);
     CU_ASSERT_EQUAL(*(pcbDeMayorPID->pid), 5);
     CU_ASSERT_EQUAL(dictionary_size(pcb5->deadlockInfo->semaforosQueRetiene), 4);
-    __recuperarse_del_deadlock(pcbsDeadlock, semsDeadlock, colaSems->listaRecursos, pcbsBlocked);
+    __deadlock_recuperarse_del_deadlock(pcbsDeadlock, semsDeadlock, colaSems->listaRecursos, pcbsBlocked);
     CU_ASSERT_EQUAL(dictionary_size(pcb5->deadlockInfo->semaforosQueRetiene), 0);
-    existeDeadlock = __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    existeDeadlock = __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
     CU_ASSERT_FALSE(existeDeadlock); */
 
     list_destroy(pcbsBlocked);
@@ -564,14 +564,14 @@ void test_deteccion_y_recuperacion_del_deadlock_2(void) {
     detectar_y_recuperarse_del_deadlock(pcbsBlocked, colaSems);
 
     /* t_list* pcbsDeadlock = list_filter(pcbsBlocked, pcb_espera_algun_semaforo);
-    bool existeDeadlock = __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    bool existeDeadlock = __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
     CU_ASSERT_TRUE(existeDeadlock);
     t_pcb* pcbDeMayorPID = list_get_maximum(pcbsDeadlock, pcb_maximum_pid);
     CU_ASSERT_EQUAL(*(pcbDeMayorPID->pid), 3);
     CU_ASSERT_EQUAL(dictionary_size(pcb3->deadlockInfo->semaforosQueRetiene), 1);
-    __recuperarse_del_deadlock(pcbsDeadlock, semsDeadlock, colaSems->listaRecursos, pcbsBlocked);
+    __deadlock_recuperarse_del_deadlock(pcbsDeadlock, semsDeadlock, colaSems->listaRecursos, pcbsBlocked);
     CU_ASSERT_EQUAL(dictionary_size(pcb3->deadlockInfo->semaforosQueRetiene), 0);
-    existeDeadlock = __reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
+    existeDeadlock = __deadlock_reducir_matrices_de_deteccion(pcbsDeadlock, semsDeadlock);
     CU_ASSERT_FALSE(existeDeadlock); */
 
     list_destroy(pcbsBlocked);

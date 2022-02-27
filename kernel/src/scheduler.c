@@ -413,13 +413,13 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
 
             if (sem != NULL) {
-                log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), sem->valorActual);
+                log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_valor_actual(sem));
                 esBloqueante = kernel_sem_wait(sem, pcb);
                 log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
                 if (esBloqueante) {
-                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Se bloquea en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), unaTareaSem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Se bloquea en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), unaTareaSem->nombre, recurso_sem_get_valor_actual(sem));
                 } else {
-                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Continúa su ejecución. Valor semáforo: %d", pcb_get_pid(pcb), sem->valorActual);
+                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Continúa su ejecución. Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_valor_actual(sem));
                 }
             } else {
                 log_error(kernelLogger, "SEM_WAIT <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
@@ -435,16 +435,16 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
 
             if (sem != NULL) {
-                log_info(kernelLogger, "SEM_POST <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), sem->valorActual);
+                log_info(kernelLogger, "SEM_POST <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_valor_actual(sem));
                 pthread_mutex_lock(&mutexDeadlock);
                 log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
                 pcbDesbloqueado = kernel_sem_post(sem, pcb);
                 pthread_mutex_unlock(&mutexDeadlock);
                 log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
                 if (pcbDesbloqueado != NULL) {
-                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Se desbloquea Carpincho %d en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), pcb_get_pid(pcbDesbloqueado), sem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Se desbloquea Carpincho %d en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), pcb_get_pid(pcbDesbloqueado), recurso_sem_get_nombre(sem), recurso_sem_get_valor_actual(sem));
                 } else {
-                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Ningún carpincho en cola de bloqueados de semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), sem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Ningún carpincho en cola de bloqueados de semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_nombre(sem), recurso_sem_get_valor_actual(sem));
                 }
             } else {
                 log_error(kernelLogger, "SEM_POST <Carpincho %d>: Semáforo \"%s\" no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
@@ -460,13 +460,15 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
 
             if (sem != NULL) {
-                if (queue_size(sem->colaPCBs) == 0) {
-                    index = list_get_index(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, (void*)sem->nombre);
+                char* nombre = recurso_sem_get_nombre(sem);
+                t_queue* colaBloqueados = recurso_sem_get_cola_pcbs(sem);
+                if (queue_size(colaBloqueados) == 0) {
+                    index = list_get_index(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, (void*)nombre);
                     list_remove(semaforosDelSistema->listaRecursos, index);
-                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Se elimina el semáforo \"%s\" con valor %d", pcb_get_pid(pcb), sem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Se elimina el semáforo \"%s\" con valor %d", pcb_get_pid(pcb), nombre, recurso_sem_get_valor_actual(sem));
                     recurso_sem_destroy(sem);
                 } else {
-                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Denegación de eliminación de semáforo \"%s\". Cantidad de procesos bloqueados en semáforo: %d", pcb_get_pid(pcb), sem->nombre, queue_size(sem->colaPCBs));
+                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Denegación de eliminación de semáforo \"%s\". Cantidad de procesos bloqueados en semáforo: %d", pcb_get_pid(pcb), nombre, queue_size(colaBloqueados));
                 }
             } else {
                 log_error(kernelLogger, "SEM_DESTROY <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
@@ -700,28 +702,21 @@ t_cola_recursos* cola_recursos_create(void) {
     return colaRecursos;
 }
 
-t_recurso_sem* recurso_sem_create(char* nombre, int32_t valor) {
-    t_recurso_sem* recursoSem = malloc(sizeof(*recursoSem));
-    recursoSem->colaPCBs = queue_create();
-    recursoSem->nombre = strdup(nombre);
-    recursoSem->valorInicial = valor;
-    recursoSem->valorActual = recursoSem->valorInicial;
-    pthread_mutex_init(&(recursoSem->mutexColaPCBs), NULL);
-    pthread_mutex_init(&(recursoSem->mutexValorSemaforo), NULL);
-    return recursoSem;
-}
-
 static void encolar_pcb_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
-    pthread_mutex_lock(&(sem->mutexColaPCBs));
-    queue_push(sem->colaPCBs, pcb);
-    pthread_mutex_unlock(&(sem->mutexColaPCBs));
+    pthread_mutex_t* mutexColaPCBs = recurso_sem_get_mutex_cola_pcbs(sem);
+    pthread_mutex_lock(mutexColaPCBs);
+    t_queue* colaPCBs = recurso_sem_get_cola_pcbs(sem);
+    queue_push(colaPCBs, pcb);
+    pthread_mutex_unlock(mutexColaPCBs);
 }
 
 static t_pcb* pop_primer_pcb_de_cola_semaforo(t_recurso_sem* sem) {
     t_pcb* primerPCB = NULL;
-    pthread_mutex_lock(&(sem->mutexColaPCBs));
-    primerPCB = queue_pop(sem->colaPCBs);
-    pthread_mutex_unlock(&(sem->mutexColaPCBs));
+    pthread_mutex_t* mutexColaPCBs = recurso_sem_get_mutex_cola_pcbs(sem);
+    pthread_mutex_lock(mutexColaPCBs);
+    t_queue* colaPCBs = recurso_sem_get_cola_pcbs(sem);
+    primerPCB = queue_pop(colaPCBs);
+    pthread_mutex_unlock(mutexColaPCBs);
     return primerPCB;
 }
 
@@ -730,22 +725,24 @@ void retener_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     t_deadlock* info = pcb_get_deadlock_info(pcb);
     pthread_mutex_lock(deadlock_get_dict_mutex(info));
     t_dictionary* dict = deadlock_get_dict(info);
-    if (dictionary_has_key(dict, sem->nombre)) {
-        valorActual = (int32_t*)dictionary_get(dict, sem->nombre);
+    char* nombre = recurso_sem_get_nombre(sem);
+    if (dictionary_has_key(dict, nombre)) {
+        valorActual = (int32_t*)dictionary_get(dict, nombre);
         (*valorActual)++;
     } else {
         valorActual = malloc(sizeof(*valorActual));
         *valorActual = 1;
     }
-    dictionary_put(dict, sem->nombre, valorActual);
+    dictionary_put(dict, nombre, valorActual);
     pthread_mutex_unlock(deadlock_get_dict_mutex(info));
 }
 
 bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
-    pthread_mutex_lock(&(sem->mutexValorSemaforo));
-    sem->valorActual--;
-    bool esBloqueante = sem->valorActual < 0;
-    pthread_mutex_unlock(&(sem->mutexValorSemaforo));
+    pthread_mutex_t* mutexValorSem = recurso_sem_get_mutex_valor_sem(sem);
+    pthread_mutex_lock(mutexValorSem);
+    recurso_sem_dec_cant_instancias(sem);
+    bool esBloqueante = recurso_sem_es_bloqueante(sem);
+    pthread_mutex_unlock(mutexValorSem);
 
     if (esBloqueante) {
         dequeue_pcb(pcbWait, pcbsExec);
@@ -769,12 +766,13 @@ void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     pthread_mutex_lock(deadlock_get_dict_mutex(info));
     t_dictionary* dict = deadlock_get_dict(info);
     int32_t* valorActual = NULL;
-    if (dictionary_has_key(dict, sem->nombre)) {
-        valorActual = (int32_t*)dictionary_get(dict, sem->nombre);
+    char* nombre = recurso_sem_get_nombre(sem);
+    if (dictionary_has_key(dict, nombre)) {
+        valorActual = (int32_t*)dictionary_get(dict, nombre);
         (*valorActual)--;
-        dictionary_put(dict, sem->nombre, valorActual);
+        dictionary_put(dict, nombre, valorActual);
         if (*valorActual == 0) {
-            valorActual = dictionary_remove(dict, sem->nombre);
+            valorActual = dictionary_remove(dict, nombre);
             free(valorActual);
         }
     }
@@ -783,11 +781,11 @@ void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
 
 t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
     t_pcb* primerPCB = NULL;
-
-    pthread_mutex_lock(&(sem->mutexValorSemaforo));
-    sem->valorActual++;
-    bool hayPCBsBloqueados = sem->valorActual <= 0;
-    pthread_mutex_unlock(&(sem->mutexValorSemaforo));
+    pthread_mutex_t* mutexValorSem = recurso_sem_get_mutex_valor_sem(sem);
+    pthread_mutex_lock(mutexValorSem);
+    recurso_sem_inc_cant_instancias(sem);
+    bool hayPCBsBloqueados = recurso_sem_hay_pcbs_bloqueados(sem);
+    pthread_mutex_unlock(mutexValorSem);
 
     liberar_una_instancia_del_semaforo(pcbPost, sem);
 
@@ -805,12 +803,4 @@ t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
         }
     }
     return primerPCB;
-}
-
-void recurso_sem_destroy(t_recurso_sem* unSemaforo) {
-    queue_destroy(unSemaforo->colaPCBs);
-    pthread_mutex_destroy(&(unSemaforo->mutexColaPCBs));
-    pthread_mutex_destroy(&(unSemaforo->mutexValorSemaforo));
-    free(unSemaforo->nombre);
-    free(unSemaforo);
 }

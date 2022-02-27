@@ -207,7 +207,7 @@ void* pcb_maximum_pid(void* pcbVoid1, void* pcbVoid2) {
     return *(pcb1->socket) > *(pcb2->socket) ? pcb1 : pcb2;
 }
 
-bool __eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
+bool __deadlock_eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
     int index = list_get_index(lista, (void*)__es_este_pcb, (void*)pcb->socket);
     if (index != -1) {
         list_remove(lista, index);

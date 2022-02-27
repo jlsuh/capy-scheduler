@@ -6,7 +6,7 @@
 
 #include "kernel_structs.h"
 
-bool __eliminar_pcb_de_lista(t_pcb *pcb, t_list *lista);
+bool __deadlock_eliminar_pcb_de_lista(t_pcb *pcb, t_list *lista);
 bool __es_este_pcb(void *pcbVoid, void *pidVoid);
 bool kernel_sem_wait(t_recurso_sem *sem, t_pcb *pcbWait);
 double get_diferencial_de_tiempo(clock_t tiempoFinal, clock_t tiempoInicial);

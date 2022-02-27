@@ -53,15 +53,6 @@ typedef struct {
 typedef struct {
     t_queue *colaPCBs;
     char *nombre;
-    int32_t valorInicial;
-    int32_t valorActual;
-    pthread_mutex_t mutexColaPCBs;
-    pthread_mutex_t mutexValorSemaforo;
-} t_recurso_sem;
-
-typedef struct {
-    t_queue *colaPCBs;
-    char *nombre;
     uint32_t duracion;
     sem_t instanciasDisponibles;
     pthread_mutex_t mutexColaPCBs;

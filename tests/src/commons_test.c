@@ -107,7 +107,7 @@ void test_eliminar_un_elemento_de_la_lista_de_una_queue(void) {
 
     queue_push(queue, pcb1);
 
-    __eliminar_pcb_de_lista(pcb1, queue->elements);
+    __deadlock_eliminar_pcb_de_lista(pcb1, queue->elements);
 
     CU_ASSERT_TRUE(queue_is_empty(queue));
 
