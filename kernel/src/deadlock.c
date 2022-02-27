@@ -20,18 +20,18 @@ typedef enum {
 
 static bool espera_algun_semaforo(void* pcbVoid) {
     t_pcb* pcb = (t_pcb*)pcbVoid;
-    return pcb->deadlockInfo->esperaEnSemaforo != NULL;
+    return pcb_get_deadlock_info(pcb)->esperaEnSemaforo != NULL;
 }
 
 static bool espera_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
-    if (espera_algun_semaforo(pcb) && strcmp(pcb->deadlockInfo->esperaEnSemaforo->nombre, sem->nombre) == 0) {
+    if (espera_algun_semaforo(pcb) && strcmp(pcb_get_deadlock_info(pcb)->esperaEnSemaforo->nombre, sem->nombre) == 0) {
         return true;
     }
     return false;
 }
 
 static bool retiene_instancias_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
-    return dictionary_has_key(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
+    return dictionary_has_key(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre);
 }
 
 bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
@@ -43,13 +43,13 @@ bool es_este_semaforo(void* recursoSemVoid, void* nombreVoid) {
 static bool es_este_pcb(void* pcbVoid, void* pidVoid) {
     t_pcb* pcb = (t_pcb*)pcbVoid;
     uint32_t pid = *(uint32_t*)pidVoid;
-    return pcb->pid == pid;
+    return pcb_get_pid(pcb) == pid;
 }
 
 static void* mayor_pid(void* pcbVoid1, void* pcbVoid2) {
     t_pcb* pcb1 = pcbVoid1;
     t_pcb* pcb2 = pcbVoid2;
-    return pcb1->pid > pcb2->pid ? pcb1 : pcb2;
+    return pcb_get_pid(pcb1) > pcb_get_pid(pcb2) ? pcb1 : pcb2;
 }
 
 static bool matrices_son_nulas(t_list* pcbsEnDeadlock, t_list* semsEnDeadlock) {
@@ -115,7 +115,8 @@ static void reducir_matrices_de_deteccion(t_list* pcbsEnDeadlock, t_list* semsEn
 }
 
 static bool eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
-    int index = list_get_index(lista, (void*)es_este_pcb, (void*)&(pcb->pid));
+    uint32_t pid = pcb_get_pid(pcb);
+    int index = list_get_index(lista, (void*)es_este_pcb, (void*)&pid);
     if (index != -1) {
         list_remove(lista, index);
         return true;
@@ -125,20 +126,20 @@ static bool eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
 
 static void finalizar_carpincho_en_deadlock(t_pcb* pcb) {
     char* prevStatus = NULL;
-    if (pcb->status == BLOCKED) {
+    if (pcb_get_status(pcb) == BLOCKED) {
         prevStatus = string_from_format("BLOCKED");
-    } else if (pcb->status == SUSBLOCKED) {
+    } else if (pcb_get_status(pcb) == SUSBLOCKED) {
         prevStatus = string_from_format("SUSP/BLOCKED");
     }
-    log_info(kernelLogger, "Deadlock: Finalización abrupta del PCB ID %d por resolución de deadlocks", pcb->pid);
-    send_empty_buffer(DEADLOCK_END, *(pcb->socket));
-    log_transition("Deadlock", prevStatus, "EXIT", pcb->pid);
-    pcb->algoritmo_destroy(pcb);
+    log_info(kernelLogger, "Deadlock: Finalización abrupta del PCB ID %d por resolución de deadlocks", pcb_get_pid(pcb));
+    send_empty_buffer(DEADLOCK_END, *pcb_get_socket(pcb));
+    log_transition("Deadlock", prevStatus, "EXIT", pcb_get_pid(pcb));
+    pcb_algoritmo_destroy(pcb);
     free(prevStatus);
 }
 
 static void liberar_instancias_que_retiene(t_pcb* pcb, t_recurso_sem* sem) {
-    int cantInstRet = *(int*)dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
+    int cantInstRet = *(int*)dictionary_get(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre);
     while (cantInstRet > 0) {
         kernel_sem_post(sem, pcb);
         cantInstRet--;
@@ -159,7 +160,7 @@ static void recuperarse_del_deadlock(t_list* pcbsEnDeadlock, t_list* semsEnDeadl
                 } else {
                     sem_post(gradoMultiprog);
                 }
-                t_recurso_sem* semEnDondeSeEncuentraBloqueado = list_find2(listaDeSemaforosDelSistema, (void*)es_este_semaforo, (void*)(pcbDeMayorPID->deadlockInfo->esperaEnSemaforo->nombre));
+                t_recurso_sem* semEnDondeSeEncuentraBloqueado = list_find2(listaDeSemaforosDelSistema, (void*)es_este_semaforo, (void*)(pcb_get_deadlock_info(pcbDeMayorPID)->esperaEnSemaforo->nombre));
                 eliminar_pcb_de_lista(pcbDeMayorPID, semEnDondeSeEncuentraBloqueado->colaPCBs->elements);
                 yaFueEliminadoDeLasColas = true;
                 semEnDondeSeEncuentraBloqueado->valorActual++;

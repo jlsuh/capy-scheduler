@@ -3,6 +3,7 @@
 
 #include "buffer.h"
 #include "kernel_structs.h"
+#include "pcb.h"
 
 void enviar_mate_close_a_memoria(t_pcb *pcb);
 void enviar_memalloc_a_memoria(t_pcb *pcb, t_buffer *buffer);

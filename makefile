@@ -1,4 +1,4 @@
-PROJECTS=kernel use-case-deadlock use-case-scheduling use-case-suspension tests
+PROJECTS=kernel use-case-deadlock use-case-scheduling use-case-suspension
 LIBS=static matelib
 
 all: $(PROJECTS)

@@ -40,7 +40,7 @@ static t_cola_planificacion* pcbsExec;
 static t_cola_recursos* semaforosDelSistema;
 static t_cola_recursos* dispositivosIODelSistema;
 
-static int pcb_get_posicion(t_pcb* pcb, t_list* lista) {
+static int get_pcb_index(t_pcb* pcb, t_list* lista) {
     for (int posicion = 0; posicion < list_size(lista); posicion++) {
         if (pcb == (t_pcb*)list_get(lista, posicion)) {
             return posicion;
@@ -49,15 +49,15 @@ static int pcb_get_posicion(t_pcb* pcb, t_list* lista) {
     return -1;
 }
 
-static void agregar_pcb_a_cola(t_pcb* pcb, t_cola_planificacion* cola) {
+static void enqueue_pcb(t_pcb* pcb, t_cola_planificacion* cola) {
     pthread_mutex_lock(&(cola->mutex));
     list_add(cola->lista, pcb);
     pthread_mutex_unlock(&(cola->mutex));
 }
 
-static void remover_pcb_de_cola(t_pcb* pcb, t_cola_planificacion* cola) {
+static void dequeue_pcb(t_pcb* pcb, t_cola_planificacion* cola) {
     pthread_mutex_lock(&(cola->mutex));
-    int posicion = pcb_get_posicion(pcb, cola->lista);
+    int posicion = get_pcb_index(pcb, cola->lista);
     if (posicion != -1) {
         list_remove(cola->lista, posicion);
     } else {
@@ -66,21 +66,17 @@ static void remover_pcb_de_cola(t_pcb* pcb, t_cola_planificacion* cola) {
     pthread_mutex_unlock(&(cola->mutex));
 }
 
-static void cambiar_estado_pcb(t_pcb* pcb, t_status nuevoEstado) {
-    pcb->status = nuevoEstado;
-}
-
 static void pasar_de_susblocked_a_susready(t_pcb* pcb) {
-    remover_pcb_de_cola(pcb, pcbsSusBlocked);
-    cambiar_estado_pcb(pcb, SUSREADY);
-    agregar_pcb_a_cola(pcb, pcbsSusReady);
+    dequeue_pcb(pcb, pcbsSusBlocked);
+    pcb_set_status(pcb, SUSREADY);
+    enqueue_pcb(pcb, pcbsSusReady);
     sem_post(&hayPCBsParaAgregarAlSistema);
 }
 
 static void pasar_de_blocked_a_ready(t_pcb* pcb) {
-    remover_pcb_de_cola(pcb, pcbsBlocked);
-    cambiar_estado_pcb(pcb, READY);
-    agregar_pcb_a_cola(pcb, pcbsReady);
+    dequeue_pcb(pcb, pcbsBlocked);
+    pcb_set_status(pcb, READY);
+    enqueue_pcb(pcb, pcbsReady);
     sem_post(&(pcbsReady->instanciasDisponibles));
 }
 
@@ -116,9 +112,9 @@ static void inicializar_dispositivos_io_config(t_cola_recursos* dispositivosIODe
 }
 
 static void ejecutar_rafagas_io(t_recurso_io* recursoIO, t_pcb* primerPCB) {
-    log_info(kernelLogger, "Dispositivo I/O <%s>: Carpincho ID %d ejecutando ráfagas I/O", recursoIO->nombre, primerPCB->pid);
+    log_info(kernelLogger, "Dispositivo I/O <%s>: Carpincho ID %d ejecutando ráfagas I/O", recursoIO->nombre, pcb_get_pid(primerPCB));
     intervalo_de_pausa(recursoIO->duracion);
-    log_info(kernelLogger, "Dispositivo I/O <%s>: Fin ráfagas I/O Carpincho ID %d", recursoIO->nombre, primerPCB->pid);
+    log_info(kernelLogger, "Dispositivo I/O <%s>: Fin ráfagas I/O Carpincho ID %d", recursoIO->nombre, pcb_get_pid(primerPCB));
 }
 
 static noreturn void* iniciar_rutina_ejecucion_dispositivos_io(void* args) {
@@ -134,20 +130,21 @@ static noreturn void* iniciar_rutina_ejecucion_dispositivos_io(void* args) {
 
         ejecutar_rafagas_io(recursoIO, primerPCB);
 
-        if (primerPCB->status == SUSBLOCKED) {
+        t_status pcbCurrStatus = pcb_get_status(primerPCB);
+        if (pcbCurrStatus == SUSBLOCKED) {
             pthread_mutex_lock(&mutexDeadlock);
             log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             pasar_de_susblocked_a_susready(primerPCB);
             pthread_mutex_unlock(&mutexDeadlock);
             log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
-            log_transition(nombreDispositivo, "SUSP/BLOCKED", "SUSP/READY", primerPCB->pid);
-        } else if (primerPCB->status == BLOCKED) {
+            log_transition(nombreDispositivo, "SUSP/BLOCKED", "SUSP/READY", pcb_get_pid(primerPCB));
+        } else if (pcbCurrStatus == BLOCKED) {
             pthread_mutex_lock(&mutexDeadlock);
             log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             pasar_de_blocked_a_ready(primerPCB);
             pthread_mutex_unlock(&mutexDeadlock);
             log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
-            log_transition(nombreDispositivo, "BLOCKED", "READY", primerPCB->pid);
+            log_transition(nombreDispositivo, "BLOCKED", "READY", pcb_get_pid(primerPCB));
         }
         free(nombreDispositivo);
     }
@@ -163,7 +160,7 @@ static void iniciar_ejecucion_lista_dispositivos_io(void) {
     list_iterate(dispositivosIODelSistema->listaRecursos, (void*)iniciar_dispositivo_io);
 }
 
-static t_pcb* get_and_remove_primer_pcb_de_cola(t_cola_planificacion* cola) {
+static t_pcb* get_and_remove_first_pcb_from_queue(t_cola_planificacion* cola) {
     t_pcb* pcb = NULL;
     pthread_mutex_lock(&(cola->mutex));
     if (!list_is_empty(cola->lista)) {
@@ -178,13 +175,13 @@ static noreturn void* liberar_carpinchos_en_exit(void* _) {
     for (;;) {
         sem_wait(&(pcbsExit->instanciasDisponibles));
 
-        t_pcb* pcbALiberar = get_and_remove_primer_pcb_de_cola(pcbsExit);
+        t_pcb* pcbALiberar = get_and_remove_first_pcb_from_queue(pcbsExit);
 
         enviar_mate_close_a_memoria(pcbALiberar);
 
-        send_empty_buffer(OK_FINISH, *(pcbALiberar->socket));
-        log_info(kernelLogger, "Kernel: Desconexión Carpincho ID %d", pcbALiberar->pid);
-        pcbALiberar->algoritmo_destroy(pcbALiberar);
+        send_empty_buffer(OK_FINISH, *pcb_get_socket(pcbALiberar));
+        log_info(kernelLogger, "Kernel: Desconexión Carpincho ID %d", pcb_get_pid(pcbALiberar));
+        pcb_algoritmo_destroy(pcbALiberar);
 
         log_info(kernelLogger, "Largo Plazo: Se libera una instancia de Grado Multiprogramación");
         sem_post(&gradoMultiprog); /* Aumenta el grado de multiprogramación al tener carpincho en EXIT */
@@ -207,13 +204,14 @@ static noreturn void* iniciar_largo_plazo(void* _) {
         if (!list_is_empty(pcbsSusReady->lista)) {
             sem_post(&transicionarSusReadyAready);
         } else {
-            t_pcb* pcbQuePasaAReady = get_and_remove_primer_pcb_de_cola(pcbsNew);
-            pcbQuePasaAReady->algoritmo_init(pcbQuePasaAReady);
+            t_pcb* pcbQuePasaAReady = get_and_remove_first_pcb_from_queue(pcbsNew);
+
+            pcb_algoritmo_init(pcbQuePasaAReady);
             log_info(kernelLogger, "Largo Plazo: Incialización de información del algoritmo correcta");
 
-            cambiar_estado_pcb(pcbQuePasaAReady, READY);
-            agregar_pcb_a_cola(pcbQuePasaAReady, pcbsReady);
-            log_transition("Largo Plazo", "NEW", "READY", pcbQuePasaAReady->pid);
+            pcb_set_status(pcbQuePasaAReady, READY);
+            enqueue_pcb(pcbQuePasaAReady, pcbsReady);
+            log_transition("Largo Plazo", "NEW", "READY", pcb_get_pid(pcbQuePasaAReady));
 
             sem_post(&(pcbsReady->instanciasDisponibles));
         }
@@ -224,10 +222,10 @@ static noreturn void* transicion_susready_a_ready(void* _) {
     log_info(kernelLogger, "Mediano Plazo: Hilo transicionador SUSP/READY->READY inicializado");
     for (;;) {
         sem_wait(&transicionarSusReadyAready);
-        t_pcb* pcbQuePasaAReady = get_and_remove_primer_pcb_de_cola(pcbsSusReady);
-        cambiar_estado_pcb(pcbQuePasaAReady, READY);
-        agregar_pcb_a_cola(pcbQuePasaAReady, pcbsReady);
-        log_transition("Mediano Plazo", "SUSP/READY", "READY", pcbQuePasaAReady->pid);
+        t_pcb* pcbQuePasaAReady = get_and_remove_first_pcb_from_queue(pcbsSusReady);
+        pcb_set_status(pcbQuePasaAReady, READY);
+        enqueue_pcb(pcbQuePasaAReady, pcbsReady);
+        log_transition("Mediano Plazo", "SUSP/READY", "READY", pcb_get_pid(pcbQuePasaAReady));
         sem_post(&(pcbsReady->instanciasDisponibles));
     }
 }
@@ -284,42 +282,23 @@ static noreturn void* iniciar_mediano_plazo(void* _) {
             log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
             t_pcb* pcbASuspender = pop_ultimo_de_cola(pcbsBlocked);
             enviar_suspension_de_carpincho_a_memoria(pcbASuspender);
-            cambiar_estado_pcb(pcbASuspender, SUSBLOCKED);
-            agregar_pcb_a_cola(pcbASuspender, pcbsSusBlocked);
+            pcb_set_status(pcbASuspender, SUSBLOCKED);
+            enqueue_pcb(pcbASuspender, pcbsSusBlocked);
             pthread_mutex_unlock(&mutexDeadlock);
             log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
             log_info(kernelLogger, "Mediano Plazo: Se libera una instancia de Grado Multiprogramación");
-            log_transition("Mediano Plazo", "BLOCKED", "SUSP/BLOCKED", pcbASuspender->pid);
+            log_transition("Mediano Plazo", "BLOCKED", "SUSP/BLOCKED", pcb_get_pid(pcbASuspender));
             sem_post(&gradoMultiprog); /* Aumenta el grado de multiprogramción al suspender a un proceso */
         }
         sem_post(&suspensionConcluida);
     }
 }
 
-static bool algoritmo_sjf_loaded(void) {
-    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "SJF") == 0;
-}
-
-static bool algoritmo_hrrn_loaded(void) {
-    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "HRRN") == 0;
-}
-
-double get_diferencial_de_tiempo(time_t tiempoFinal, time_t tiempoInicial) {
-    double diferencialT = difftime(tiempoFinal, tiempoInicial);
-    return diferencialT;
-}
-
-double media_exponencial(double realAnterior, double estAnterior) {
-    /* Est(n) = α . R(n-1) + (1 - α) . Est(n-1) */
-    double const alfa = kernel_config_get_alfa(kernelCfg);
-    return alfa * realAnterior + (1 - alfa) * estAnterior;
-}
-
 static t_pcb* elegir_pcb_segun_algoritmo(t_cola_planificacion* cola) {
     t_pcb* pcb = NULL;
-    if (algoritmo_sjf_loaded()) {
+    if (pcb_is_sjf()) {
         pcb = elegir_en_base_a_sjf(cola);
-    } else if (algoritmo_hrrn_loaded()) {
+    } else if (pcb_is_hrrn()) {
         pcb = elegir_en_base_a_hrrn(cola);
     }
     return pcb;
@@ -373,17 +352,17 @@ static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
     if (recursoIO != NULL) {
         char* nombreDispositivo = string_from_format("Dispositivo I/O <%s>", recursoIO->nombre);
 
-        remover_pcb_de_cola(pcb, pcbsExec);
+        dequeue_pcb(pcb, pcbsExec);
 
         pthread_mutex_lock(&mutexDeadlock);
         log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
-        cambiar_estado_pcb(pcb, BLOCKED);
-        agregar_pcb_a_cola(pcb, pcbsBlocked);
+        pcb_set_status(pcb, BLOCKED);
+        enqueue_pcb(pcb, pcbsBlocked);
         pthread_mutex_unlock(&mutexDeadlock);
         log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
 
-        log_transition(nombreDispositivo, "EXEC", "BLOCKED", pcb->pid);
-        log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, callIO->mensaje, pcb->pid);
+        log_transition(nombreDispositivo, "EXEC", "BLOCKED", pcb_get_pid(pcb));
+        log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, callIO->mensaje, pcb_get_pid(pcb));
         free(nombreDispositivo);
 
         pthread_mutex_lock(&(recursoIO->mutexColaPCBs));
@@ -394,12 +373,12 @@ static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
 
         sem_post(&(recursoIO->instanciasDisponibles));
     } else {
-        log_error(kernelLogger, "Dispositivo I/O <%s>: Recurso I/O no encontrado. Petición por Carpincho ID %d", callIO->nombre, pcb->pid);
+        log_error(kernelLogger, "Dispositivo I/O <%s>: Recurso I/O no encontrado. Petición por Carpincho ID %d", callIO->nombre, pcb_get_pid(pcb));
     }
 }
 
 static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
-    uint32_t socket = *(pcb->socket);
+    uint32_t socket = *pcb_get_socket(pcb);
 
     t_tarea_sem* unaTareaSem = NULL;
     t_tarea_call_io* unaTareaCallIO = NULL;
@@ -419,9 +398,9 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
 
             if (sem == NULL) {
                 kernel_sem_init(unaTareaSem, pcb);
-                log_info(kernelLogger, "SEM_INIT <Carpincho %d>: Inicialización semáforo \"%s\" con valor %d", pcb->pid, unaTareaSem->nombre, unaTareaSem->valor);
+                log_info(kernelLogger, "SEM_INIT <Carpincho %d>: Inicialización semáforo \"%s\" con valor %d", pcb_get_pid(pcb), unaTareaSem->nombre, unaTareaSem->valor);
             } else {
-                log_error(kernelLogger, "SEM_INIT <Carpincho %d>: Intento de inicialización semáforo \"%s\" ya existente en sistema", pcb->pid, unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_INIT <Carpincho %d>: Intento de inicialización semáforo \"%s\" ya existente en sistema", pcb_get_pid(pcb), unaTareaSem->nombre);
             }
 
             send_empty_buffer(OK_CONTINUE, socket);
@@ -434,16 +413,16 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
 
             if (sem != NULL) {
-                log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Valor semáforo: %d", pcb->pid, sem->valorActual);
+                log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), sem->valorActual);
                 esBloqueante = kernel_sem_wait(sem, pcb);
                 log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
                 if (esBloqueante) {
-                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Se bloquea en semáforo \"%s\". Valor semáforo: %d", pcb->pid, unaTareaSem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Se bloquea en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), unaTareaSem->nombre, sem->valorActual);
                 } else {
-                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Continúa su ejecución. Valor semáforo: %d", pcb->pid, sem->valorActual);
+                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Continúa su ejecución. Valor semáforo: %d", pcb_get_pid(pcb), sem->valorActual);
                 }
             } else {
-                log_error(kernelLogger, "SEM_WAIT <Carpincho %d>: Semáforo %s no encontrado", pcb->pid, unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_WAIT <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
             }
 
             send_empty_buffer(OK_CONTINUE, socket);
@@ -456,19 +435,19 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
 
             if (sem != NULL) {
-                log_info(kernelLogger, "SEM_POST <Carpincho %d>: Valor semáforo: %d", pcb->pid, sem->valorActual);
+                log_info(kernelLogger, "SEM_POST <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), sem->valorActual);
                 pthread_mutex_lock(&mutexDeadlock);
                 log_info(kernelLogger, "Deadlock: Se toma el mutexDeadlock en línea %d", __LINE__);
                 pcbDesbloqueado = kernel_sem_post(sem, pcb);
                 pthread_mutex_unlock(&mutexDeadlock);
                 log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
                 if (pcbDesbloqueado != NULL) {
-                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Se desbloquea Carpincho %d en semáforo \"%s\". Valor semáforo: %d", pcb->pid, pcbDesbloqueado->pid, sem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Se desbloquea Carpincho %d en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), pcb_get_pid(pcbDesbloqueado), sem->nombre, sem->valorActual);
                 } else {
-                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Ningún carpincho en cola de bloqueados de semáforo \"%s\". Valor semáforo: %d", pcb->pid, sem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_POST <Carpincho %d>: Ningún carpincho en cola de bloqueados de semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), sem->nombre, sem->valorActual);
                 }
             } else {
-                log_error(kernelLogger, "SEM_POST <Carpincho %d>: Semáforo \"%s\" no encontrado", pcb->pid, unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_POST <Carpincho %d>: Semáforo \"%s\" no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
             }
 
             send_empty_buffer(OK_CONTINUE, socket);
@@ -484,13 +463,13 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
                 if (queue_size(sem->colaPCBs) == 0) {
                     index = list_get_index(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, (void*)sem->nombre);
                     list_remove(semaforosDelSistema->listaRecursos, index);
-                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Se elimina el semáforo \"%s\" con valor %d", pcb->pid, sem->nombre, sem->valorActual);
+                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Se elimina el semáforo \"%s\" con valor %d", pcb_get_pid(pcb), sem->nombre, sem->valorActual);
                     recurso_sem_destroy(sem);
                 } else {
-                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Denegación de eliminación de semáforo \"%s\". Cantidad de procesos bloqueados en semáforo: %d", pcb->pid, sem->nombre, queue_size(sem->colaPCBs));
+                    log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Denegación de eliminación de semáforo \"%s\". Cantidad de procesos bloqueados en semáforo: %d", pcb_get_pid(pcb), sem->nombre, queue_size(sem->colaPCBs));
                 }
             } else {
-                log_error(kernelLogger, "SEM_DESTROY <Carpincho %d>: Semáforo %s no encontrado", pcb->pid, unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_DESTROY <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
             }
 
             send_empty_buffer(OK_CONTINUE, socket);
@@ -527,7 +506,7 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
 
 static void atender_peticiones_del_carpincho(t_pcb* pcb) {
     bool peticionBloqueante = false;
-    uint32_t socket = *(pcb->socket);
+    uint32_t socket = *pcb_get_socket(pcb);
     time_t start;
     time_t end;
     time(&start);
@@ -538,10 +517,10 @@ static void atender_peticiones_del_carpincho(t_pcb* pcb) {
 
         if (opCodeTarea == MATE_CLOSE) {
             recv_empty_buffer(socket);
-            remover_pcb_de_cola(pcb, pcbsExec);
-            cambiar_estado_pcb(pcb, EXIT);
-            agregar_pcb_a_cola(pcb, pcbsExit);
-            log_transition("Corto Plazo", "EXEC", "EXIT", pcb->pid);
+            dequeue_pcb(pcb, pcbsExec);
+            pcb_set_status(pcb, EXIT);
+            enqueue_pcb(pcb, pcbsExit);
+            log_transition("Corto Plazo", "EXEC", "EXIT", pcb_get_pid(pcb));
             sem_post(&(pcbsExit->instanciasDisponibles));
             break;
         } else {
@@ -550,7 +529,7 @@ static void atender_peticiones_del_carpincho(t_pcb* pcb) {
             peticionBloqueante = realizar_tarea(buffer, opCodeTarea, pcb);
             if (peticionBloqueante) {
                 time(&end);
-                pcb->algoritmo_update_next_est_info(pcb, end, start);
+                pcb_algoritmo_update_next_est_info(pcb, end, start);
             }
             buffer_destroy(buffer);
         }
@@ -564,11 +543,11 @@ static noreturn void* iniciar_corto_plazo(void* _) {
 
         t_pcb* pcbQuePasaAExec = elegir_pcb_segun_algoritmo(pcbsReady);
 
-        remover_pcb_de_cola(pcbQuePasaAExec, pcbsReady);
-        cambiar_estado_pcb(pcbQuePasaAExec, EXEC);
-        agregar_pcb_a_cola(pcbQuePasaAExec, pcbsExec);
+        dequeue_pcb(pcbQuePasaAExec, pcbsReady);
+        pcb_set_status(pcbQuePasaAExec, EXEC);
+        enqueue_pcb(pcbQuePasaAExec, pcbsExec);
 
-        log_transition("Corto Plazo", "READY", "EXEC", pcbQuePasaAExec->pid);
+        log_transition("Corto Plazo", "READY", "EXEC", pcb_get_pid(pcbQuePasaAExec));
         evaluar_suspension(); /* Caso posible en donde la cola de planificación ready se quede sin PCBs */
 
         atender_peticiones_del_carpincho(pcbQuePasaAExec);
@@ -651,12 +630,17 @@ void log_transition(const char* entityName, const char* prev, const char* post, 
     free(transicion);
 }
 
-static uint32_t get_siguiente_pid(void) {
+static uint32_t get_next_pid(void) {
     pthread_mutex_lock(&mutexPid);
     uint32_t pid = nextPid;
-    nextPid++;
     pthread_mutex_unlock(&mutexPid);
     return pid;
+}
+
+static void pid_inc(uint32_t* pid) {
+    pthread_mutex_lock(&mutexPid);
+    (*pid)++;
+    pthread_mutex_unlock(&mutexPid);
 }
 
 void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
@@ -666,13 +650,14 @@ void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
 
     if (opCodeTarea == MATE_INIT) {
         t_buffer* buffer = buffer_create();
-        uint32_t siguientePid = get_siguiente_pid();
+        uint32_t siguientePid = get_next_pid();
+        pid_inc(&nextPid);
         buffer_pack(buffer, &siguientePid, sizeof(siguientePid));
         buffer_send(buffer, OK_CONTINUE, *socket);
         t_pcb* pcb = pcb_create(socket, siguientePid);
-        agregar_pcb_a_cola(pcb, pcbsNew);
-        log_info(kernelLogger, "Kernel: Carpincho ID %d establece conexión", pcb->pid);
-        log_info(kernelLogger, "Kernel: Creación PCB Carpincho ID %d exitosa", pcb->pid);
+        enqueue_pcb(pcb, pcbsNew);
+        log_info(kernelLogger, "Kernel: Carpincho ID %d establece conexión", pcb_get_pid(pcb));
+        log_info(kernelLogger, "Kernel: Creación PCB Carpincho ID %d exitosa", pcb_get_pid(pcb));
 
         evaluar_suspension(); /* Caso posible en donde la cola de planificación New tenga al menos 1 PCB */
         sem_post(&hayPCBsParaAgregarAlSistema);
@@ -684,35 +669,9 @@ void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
 
 t_pcb* elegir_en_base_a_sjf(t_cola_planificacion* colaPlanificacion) {
     pthread_mutex_lock(&(colaPlanificacion->mutex));
-    t_pcb* pcbMenorEstimacion = (t_pcb*)list_get_minimum(colaPlanificacion->lista, (void*)sjf_pcb_menor_estimacion_entre);
+    t_pcb* pcbMenorEstimacion = (t_pcb*)list_get_minimum(colaPlanificacion->lista, (void*)pcb_minimum_est);
     pthread_mutex_unlock(&(colaPlanificacion->mutex));
     return pcbMenorEstimacion;
-}
-
-t_pcb* sjf_pcb_menor_estimacion_entre(t_pcb* unPcb, t_pcb* otroPcb) {
-    return unPcb->sjf->estActual <= otroPcb->sjf->estActual ? unPcb : otroPcb;
-}
-
-void sjf_actualizar_info_para_siguiente_estimacion(t_pcb* pcb, time_t tiempoFinal, time_t tiempoInicial) {
-    double realAnterior = get_diferencial_de_tiempo(tiempoFinal, tiempoInicial);
-    pcb->sjf->estActual = media_exponencial(realAnterior, pcb->sjf->estActual);
-}
-
-void inicializar_sjf(t_pcb* pcb) {
-    pcb->sjf = malloc(sizeof(*(pcb->sjf)));
-    pcb->sjf->estActual = kernel_config_get_est_inicial(kernelCfg);
-}
-
-void inicializar_hrrn(t_pcb* pcb) {
-    pcb->hrrn = malloc(sizeof(*(pcb->hrrn)));
-    pcb->hrrn->s = kernel_config_get_est_inicial(kernelCfg);
-    time(&(pcb->hrrn->w));
-}
-
-void hrrn_actualizar_info_para_siguiente_estimacion(t_pcb* pcb, time_t tiempoFinal, time_t tiempoInicial) {
-    double realAnterior = get_diferencial_de_tiempo(tiempoFinal, tiempoInicial);
-    pcb->hrrn->s = media_exponencial(realAnterior, pcb->hrrn->s);
-    time(&(pcb->hrrn->w));
 }
 
 t_pcb* elegir_en_base_a_hrrn(t_cola_planificacion* colaPlanificacion) {
@@ -732,33 +691,6 @@ t_pcb* elegir_en_base_a_hrrn(t_cola_planificacion* colaPlanificacion) {
     pthread_mutex_unlock(&(colaPlanificacion->mutex));
 
     return pcbConMayorRR;
-}
-
-double response_ratio(t_pcb* pcb, time_t now) {
-    return get_diferencial_de_tiempo(now, pcb->hrrn->w) / pcb->hrrn->s + 1;
-}
-
-t_pcb* pcb_create(uint32_t* socket, uint32_t pid) {
-    t_pcb* self = malloc(sizeof(*self));
-    self->socket = socket;
-    self->pid = pid;
-    self->status = NEW;
-    self->sjf = NULL;
-    self->hrrn = NULL;
-    if (algoritmo_sjf_loaded()) {
-        self->algoritmo_init = inicializar_sjf;
-        self->algoritmo_destroy = sjf_destroy;
-        self->algoritmo_update_next_est_info = sjf_actualizar_info_para_siguiente_estimacion;
-    } else if (algoritmo_hrrn_loaded()) {
-        self->algoritmo_init = inicializar_hrrn;
-        self->algoritmo_destroy = hrrn_destroy;
-        self->algoritmo_update_next_est_info = hrrn_actualizar_info_para_siguiente_estimacion;
-    }
-    self->deadlockInfo = malloc(sizeof(*(self->deadlockInfo)));
-    self->deadlockInfo->esperaEnSemaforo = NULL;
-    self->deadlockInfo->semaforosQueRetiene = dictionary_create();
-    pthread_mutex_init(&(self->deadlockInfo->mutexDict), NULL);
-    return self;
 }
 
 t_cola_recursos* cola_recursos_create(void) {
@@ -795,16 +727,16 @@ static t_pcb* pop_primer_pcb_de_cola_semaforo(t_recurso_sem* sem) {
 
 void retener_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     int32_t* valorActual = NULL;
-    pthread_mutex_lock(&(pcb->deadlockInfo->mutexDict));
-    if (dictionary_has_key(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre)) {
-        valorActual = (int32_t*)dictionary_get(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre);
+    pthread_mutex_lock(&(pcb_get_deadlock_info(pcb)->mutexDict));
+    if (dictionary_has_key(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre)) {
+        valorActual = (int32_t*)dictionary_get(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre);
         (*valorActual)++;
     } else {
         valorActual = malloc(sizeof(*valorActual));
         *valorActual = 1;
     }
-    dictionary_put(pcb->deadlockInfo->semaforosQueRetiene, sem->nombre, valorActual);
-    pthread_mutex_unlock(&(pcb->deadlockInfo->mutexDict));
+    dictionary_put(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, sem->nombre, valorActual);
+    pthread_mutex_unlock(&(pcb_get_deadlock_info(pcb)->mutexDict));
 }
 
 bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
@@ -814,14 +746,14 @@ bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
     pthread_mutex_unlock(&(sem->mutexValorSemaforo));
 
     if (esBloqueante) {
-        remover_pcb_de_cola(pcbWait, pcbsExec);
+        dequeue_pcb(pcbWait, pcbsExec);
 
-        cambiar_estado_pcb(pcbWait, BLOCKED);
-        pcbWait->deadlockInfo->esperaEnSemaforo = sem;
+        pcb_set_status(pcbWait, BLOCKED);
+        pcb_get_deadlock_info(pcbWait)->esperaEnSemaforo = sem;
         encolar_pcb_al_semaforo(pcbWait, sem);
-        agregar_pcb_a_cola(pcbWait, pcbsBlocked);
+        enqueue_pcb(pcbWait, pcbsBlocked);
 
-        log_transition("Kernel", "EXEC", "BLOCKED", pcbWait->pid);
+        log_transition("Kernel", "EXEC", "BLOCKED", pcb_get_pid(pcbWait));
 
         evaluar_suspension(); /* Caso posible en donde la cola de planificación Blocked tenga al menos 1 PCB */
     } else {
@@ -831,8 +763,8 @@ bool kernel_sem_wait(t_recurso_sem* sem, t_pcb* pcbWait) {
 }
 
 void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
-    pthread_mutex_lock(&(pcb->deadlockInfo->mutexDict));
-    t_dictionary* dict = pcb->deadlockInfo->semaforosQueRetiene;
+    pthread_mutex_lock(&(pcb_get_deadlock_info(pcb)->mutexDict));
+    t_dictionary* dict = pcb_get_deadlock_info(pcb)->semaforosQueRetiene;
     int32_t* valorActual = NULL;
     if (dictionary_has_key(dict, sem->nombre)) {
         valorActual = (int32_t*)dictionary_get(dict, sem->nombre);
@@ -843,7 +775,7 @@ void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
             free(valorActual);
         }
     }
-    pthread_mutex_unlock(&(pcb->deadlockInfo->mutexDict));
+    pthread_mutex_unlock(&(pcb_get_deadlock_info(pcb)->mutexDict));
 }
 
 t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
@@ -859,23 +791,17 @@ t_pcb* kernel_sem_post(t_recurso_sem* sem, t_pcb* pcbPost) {
     if (hayPCBsBloqueados) {
         primerPCB = pop_primer_pcb_de_cola_semaforo(sem);
         if (primerPCB != NULL) {
-            if (primerPCB->status == SUSBLOCKED) { /* Viene de SUSBLOCKED => ya lo habíamos eliminado de la cola general de bloqueados al momento de suspenderlo */
+            t_status pcbCurrStatus = pcb_get_status(primerPCB);
+            if (pcbCurrStatus == SUSBLOCKED) { /* Viene de SUSBLOCKED => ya lo habíamos eliminado de la cola general de bloqueados al momento de suspenderlo */
                 pasar_de_susblocked_a_susready(primerPCB);
-            } else if (primerPCB->status == BLOCKED) { /* Viene de BLOCKED => hay que eliminarlo de la lista general de bloqueados */
+            } else if (pcbCurrStatus == BLOCKED) { /* Viene de BLOCKED => hay que eliminarlo de la lista general de bloqueados */
                 pasar_de_blocked_a_ready(primerPCB);
             }
-            primerPCB->deadlockInfo->esperaEnSemaforo = NULL;
+            pcb_get_deadlock_info(primerPCB)->esperaEnSemaforo = NULL;
             retener_una_instancia_del_semaforo(primerPCB, sem);
         }
     }
     return primerPCB;
-}
-
-void pcb_destroy(t_pcb* pcb) {
-    free(pcb->socket);
-    dictionary_destroy_and_destroy_elements(pcb->deadlockInfo->semaforosQueRetiene, free);
-    free(pcb->deadlockInfo);
-    free(pcb);
 }
 
 void recurso_sem_destroy(t_recurso_sem* unSemaforo) {
@@ -884,14 +810,4 @@ void recurso_sem_destroy(t_recurso_sem* unSemaforo) {
     pthread_mutex_destroy(&(unSemaforo->mutexValorSemaforo));
     free(unSemaforo->nombre);
     free(unSemaforo);
-}
-
-void sjf_destroy(t_pcb* pcb) {
-    free(pcb->sjf);
-    pcb_destroy(pcb);
-}
-
-void hrrn_destroy(t_pcb* pcb) {
-    free(pcb->hrrn);
-    pcb_destroy(pcb);
 }
