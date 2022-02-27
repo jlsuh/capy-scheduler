@@ -1,5 +1,17 @@
 #include "mem_adapter.h"
 
+#include <commons/log.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "kernel.h"
+#include "kernel_config.h"
+#include "stream.h"
+
+extern t_log* kernelLogger;
+extern t_kernel_config* kernelCfg;
+extern pthread_mutex_t mutexMemSocket;
+
 static bool es_deploy_mode(void) {
     return strcmp(EXEC_MODE, "DEPLOY_MODE") == 0;
 }

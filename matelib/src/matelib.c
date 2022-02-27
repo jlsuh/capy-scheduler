@@ -1,4 +1,16 @@
+#include <commons/config.h>
 #include <matelib.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "buffer.h"
+#include "connections.h"
+#include "kernel_structs.h"
+#include "stream.h"
+
+#define MATELIB_CFG_PATH "cfg/matelib_config.cfg"
+#define MATE_LOG_PATH "bin/matelib_log.log"
 
 //------------------ Static Functions ---------------------/
 static void buffer_pack_mate_call_io(t_buffer* buffer, mate_io_resource io, char* msg);

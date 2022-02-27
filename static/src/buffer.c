@@ -1,5 +1,9 @@
 #include "buffer.h"
 
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
 t_buffer* buffer_create(void) {
     t_buffer* self = malloc(sizeof(*self));
     self->size = 0;

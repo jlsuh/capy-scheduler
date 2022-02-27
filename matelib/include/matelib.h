@@ -1,17 +1,8 @@
 #ifndef MATELIB_H_INCLUDED
 #define MATELIB_H_INCLUDED
 
-#include <commons/config.h>
 #include <commons/log.h>
 #include <stdint.h>
-
-#include "buffer.h"
-#include "connections.h"
-#include "kernel_structs.h"
-#include "stream.h"
-
-#define MATELIB_CFG_PATH "cfg/matelib_config.cfg"
-#define MATE_LOG_PATH "bin/matelib_log.log"
 
 typedef struct mate_inner_structure {
     char *ip;

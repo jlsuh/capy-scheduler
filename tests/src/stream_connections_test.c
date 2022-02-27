@@ -1,5 +1,15 @@
 #include "stream_connections_test.h"
 
+#include <CUnit/Basic.h>
+#include <commons/config.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "buffer.h"
+#include "connections.h"
+#include "stream.h"
+
 extern t_config* testConfig;  // En tests.h
 static char* ip;
 static char* puerto;

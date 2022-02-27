@@ -1,13 +1,6 @@
 #ifndef DEADLOCK_H_INCLUDED
 #define DEADLOCK_H_INCLUDED
 
-#include <CUnit/Basic.h>
-#include <sys/param.h>
-
-#include "common_utils.h"
-#include "duplicated_logic_allocator.h"
-#include "kernel_structs.h"
-
 void test_deadlock_setup(void);
 void test_deadlock_tear_down(void);
 

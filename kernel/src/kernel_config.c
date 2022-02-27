@@ -12,6 +12,9 @@
 
 #define KERNEL_CONFIG_PATH "cfg/kernel_config.cfg"
 
+extern t_log* kernelLogger;
+extern t_kernel_config* kernelCfg;
+
 struct t_kernel_config {
     int32_t MEMORIA_SOCKET;
     char* IP_MEMORIA;

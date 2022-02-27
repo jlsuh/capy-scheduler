@@ -3,12 +3,15 @@
 #include <commons/collections/list.h>
 #include <commons/string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "common_utils.h"
 #include "kernel_structs.h"
 #include "scheduler.h"
 #include "stream.h"
+
+extern t_log* kernelLogger;
 
 typedef enum {
     PCB_LIST,

@@ -1,19 +1,8 @@
 #ifndef SCHEDULER_H_INCLUDED
 #define SCHEDULER_H_INCLUDED
 
-#include <commons/log.h>
-#include <commons/string.h>
-#include <stdbool.h>
-
-#include "common_utils.h"
 #include "kernel_config.h"
 #include "kernel_structs.h"
-#include "mem_adapter.h"
-#include "scheduler.h"
-#include "stream.h"
-
-extern t_log *kernelLogger;
-extern t_kernel_config *kernelCfg;
 
 bool kernel_sem_wait(t_recurso_sem *sem, t_pcb *pcbWait);
 double get_diferencial_de_tiempo(time_t tiempoFinal, time_t tiempoInicial);

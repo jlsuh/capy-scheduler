@@ -1,5 +1,11 @@
 #include "sjf_test.h"
 
+#include <CUnit/Basic.h>
+#include <stdlib.h>
+
+#include "duplicated_logic_allocator.h"
+#include "kernel_structs.h"
+
 extern double ESTIMACION_INICIAL;
 extern double ALFA;
 static t_list* pcbsReady;

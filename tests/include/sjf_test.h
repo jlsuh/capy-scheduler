@@ -1,12 +1,6 @@
 #ifndef SJF_TEST_H_INCLUDED
 #define SJF_TEST_H_INCLUDED
 
-#include <CUnit/Basic.h>
-#include <stdlib.h>
-
-#include "duplicated_logic_allocator.h"
-#include "kernel_structs.h"
-
 void test_sjf_setup(void);
 void test_sjf_tear_down(void);
 

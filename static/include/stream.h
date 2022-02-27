@@ -1,8 +1,7 @@
 #ifndef STREAM_H_INCLUDED
 #define STREAM_H_INCLUDED
 
-#include <netdb.h>
-#include <stdio.h>
+#include <stdint.h>
 
 #include "buffer.h"
 

@@ -1,11 +1,9 @@
 #ifndef DUPLICATED_LOGIC_ALLOCATOR_H_INCLUDED
 #define DUPLICATED_LOGIC_ALLOCATOR_H_INCLUDED
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <commons/collections/list.h>
+#include <stdbool.h>
 
-#include "common_utils.h"
 #include "kernel_structs.h"
 
 bool eliminar_pcb_de_lista(t_pcb *pcb, t_list *lista);

@@ -1,5 +1,11 @@
 #include "buffer_test.h"
 
+#include <CUnit/Basic.h>
+#include <commons/config.h>
+#include <stdlib.h>
+
+#include "buffer.h"
+
 extern t_config* testConfig;  // En tests.h
 static t_buffer* buffer;
 

@@ -1,17 +1,40 @@
-#include "tests_kernel.h"
+#include <CUnit/Basic.h>
+#include <commons/config.h>
+#include <stdlib.h>
 
-int main(int argc, char* argv[]) {
-    CU_initialize_registry();
-    CU_basic_set_mode(CU_BRM_VERBOSE);
+#include "buffer_test.h"
+#include "commons_test.h"
+#include "deadlock_test.h"
+#include "hrrn_test.h"
+#include "sjf_test.h"
+#include "stream_connections_test.h"
 
-    commons_tests();
-    kernel_tests();
-    static_lib_tests();
+#define TESTS_CONFIG_PATH "cfg/test_config.cfg"
 
-    CU_basic_run_tests();
-    CU_cleanup_registry();
+#define TEST_FUNC(func) \
+    { "\e[1;92m" #func "\e[0m", func }
+#define ARRAY_LENGTH(array) (sizeof((array)) / sizeof(*(array)))
+#define ADD_TEST_CASES_TO_SUITE(suite, tests)               \
+    for (unsigned long i = 0; i < ARRAY_LENGTH(tests); i++) \
+        CU_add_test(suite, tests[i].name, tests[i].func);
 
-    return CU_get_error();
+typedef struct {
+    const char* name;
+    void (*func)(void);
+} t_test_case;
+
+t_config* testConfig;
+
+// Se ejecuta cada vez que inicia 1 CU_pSuite
+int test_suite_initialize(void) {
+    testConfig = config_create(TESTS_CONFIG_PATH);
+    return EXIT_SUCCESS;
+}
+
+// Se ejecuta cada vez que termina 1 CU_pSuite
+int test_suite_cleanUp(void) {
+    config_destroy(testConfig);
+    return EXIT_SUCCESS;
 }
 
 void commons_tests(void) {
@@ -115,14 +138,16 @@ void static_lib_tests(void) {
     ADD_TEST_CASES_TO_SUITE(streamConexionesSuite, streamConexionesTestCases);
 }
 
-// Se ejecuta cada vez que inicia 1 CU_pSuite
-int test_suite_initialize(void) {
-    testConfig = config_create(TESTS_CONFIG_PATH);
-    return EXIT_SUCCESS;
-}
+int main(int argc, char* argv[]) {
+    CU_initialize_registry();
+    CU_basic_set_mode(CU_BRM_VERBOSE);
 
-// Se ejecuta cada vez que termina 1 CU_pSuite
-int test_suite_cleanUp(void) {
-    config_destroy(testConfig);
-    return EXIT_SUCCESS;
+    commons_tests();
+    kernel_tests();
+    static_lib_tests();
+
+    CU_basic_run_tests();
+    CU_cleanup_registry();
+
+    return CU_get_error();
 }

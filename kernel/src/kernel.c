@@ -2,7 +2,10 @@
 
 #include <commons/log.h>
 #include <commons/string.h>
+#include <errno.h>
+#include <stdlib.h>
 #include <stdnoreturn.h>
+#include <string.h>
 #include <sys/socket.h>
 
 #include "connections.h"

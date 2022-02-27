@@ -1,16 +1,6 @@
 #ifndef COMMONS_TEST_H_INCLUDED
 #define COMMONS_TEST_H_INCLUDED
 
-#include <CUnit/Basic.h>
-#include <commons/collections/dictionary.h>
-#include <commons/collections/list.h>
-#include <commons/string.h>
-#include <stdlib.h>
-
-#include "common_utils.h"
-#include "duplicated_logic_allocator.h"
-#include "kernel_structs.h"
-
 void test_commons_setup(void);
 void test_commons_tear_down(void);
 

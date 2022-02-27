@@ -2,12 +2,7 @@
 #define COMMON_UTILS_H_INCLUDED
 
 #include <commons/collections/list.h>
-#include <commons/config.h>
-#include <commons/log.h>
-#include <commons/string.h>
-#include <stdlib.h>
-
-#include "kernel_structs.h"
+#include <stdint.h>
 
 ///////////////////////////// COMMONS - Funciones Personalizadas /////////////////////////////
 int list_get_index(t_list *list, bool (*cutting_condition)(void *, void *), void *target);

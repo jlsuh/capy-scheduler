@@ -1,5 +1,9 @@
 #include "timestamp_test.h"
 
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+
 // @Before
 void test_timeStamp_setup(void) {
 }

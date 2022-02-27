@@ -1,5 +1,14 @@
 #include "deadlock_test.h"
 
+#include <CUnit/Basic.h>
+#include <commons/string.h>
+#include <stdlib.h>
+#include <sys/param.h>
+
+#include "common_utils.h"
+#include "duplicated_logic_allocator.h"
+#include "kernel_structs.h"
+
 typedef enum {
     PCB_LIST,
     SEM_LIST

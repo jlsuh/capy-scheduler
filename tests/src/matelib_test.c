@@ -1,5 +1,14 @@
 #include "matelib_test.h"
 
+#include <CUnit/Basic.h>
+#include <commons/config.h>
+#include <sys/socket.h>
+
+#include "connections.h"
+#include "unistd.h"
+
+#define MATELIB_TEST_CFG_PATH "cfg/test_config.cfg"
+
 static mate_instance mateRef;
 
 static t_config* testConfig;

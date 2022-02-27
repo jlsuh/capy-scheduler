@@ -1,11 +1,6 @@
 #ifndef BUFFER_TEST_H_INCLUDED
 #define BUFFER_TEST_H_INCLUDED
 
-#include <CUnit/Basic.h>
-#include <commons/config.h>
-
-#include "buffer.h"
-
 void test_buffer_setup(void);
 void test_buffer_tear_down(void);
 

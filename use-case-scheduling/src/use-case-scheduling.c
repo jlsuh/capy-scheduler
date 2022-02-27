@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 char *LOG_PATH = "./planificacion.log";
 char *PROGRAM_NAME = "planificacion";

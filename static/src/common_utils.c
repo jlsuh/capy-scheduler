@@ -1,5 +1,9 @@
 #include "common_utils.h"
 
+#include <commons/string.h>
+#include <stdlib.h>
+#include <time.h>
+
 ///////////////////////////// COMMONS - Funciones Personalizadas /////////////////////////////
 void* list_find2(t_list* self, bool (*condition)(void*, void*), void* data) {
     t_link_element *element, *newElement = list_create_element(data);

@@ -1,5 +1,11 @@
 #include "duplicated_logic_allocator.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "common_utils.h"
+
 double ESTIMACION_INICIAL;
 double ALFA;
 

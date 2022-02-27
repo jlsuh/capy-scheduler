@@ -1,13 +1,21 @@
 #include "scheduler.h"
 
+#include <commons/string.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdnoreturn.h>
+#include <string.h>
 
 #include "buffer.h"
+#include "common_utils.h"
 #include "deadlock.h"
-#include "kernel_structs.h"
+#include "mem_adapter.h"
+#include "stream.h"
+
+extern t_log* kernelLogger;
+extern t_kernel_config* kernelCfg;
 
 static uint32_t nextPid;
 

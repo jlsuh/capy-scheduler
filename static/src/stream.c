@@ -1,5 +1,10 @@
 #include "stream.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+
 void stream_send(int destSocket, void* toSend, uint32_t bufferSize) {
     uint32_t opCode = 0;
     uint32_t size = 0;

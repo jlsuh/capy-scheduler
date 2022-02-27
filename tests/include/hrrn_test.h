@@ -1,12 +1,6 @@
 #ifndef HRRN_TEST_H_INCLUDED
 #define HRRN_TEST_H_INCLUDED
 
-#include <CUnit/Basic.h>
-#include <stdlib.h>
-
-#include "duplicated_logic_allocator.h"
-#include "kernel_structs.h"
-
 void test_hrrn_setup(void);
 void test_hrrn_tear_down(void);
 

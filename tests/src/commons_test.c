@@ -1,5 +1,15 @@
 #include "commons_test.h"
 
+#include <CUnit/Basic.h>
+#include <commons/collections/dictionary.h>
+#include <commons/collections/list.h>
+#include <commons/string.h>
+#include <stdlib.h>
+
+#include "common_utils.h"
+#include "duplicated_logic_allocator.h"
+#include "kernel_structs.h"
+
 static t_list* lista;
 static char* string;
 
