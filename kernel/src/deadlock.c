@@ -177,8 +177,8 @@ bool deadlock_espera_en_semaforo(t_deadlock* self) {
 }
 
 void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_cola_planificacion* pcbsSusBlocked, t_cola_recursos* semaforosDelSistema, sem_t* gradoMultiprog) {
-    t_list* pcbsDeadlockBlocked = list_filter(pcbsBlocked->lista, pcb_espera_algun_semaforo);
-    t_list* pcbsDeadlockSusBlocked = list_filter(pcbsSusBlocked->lista, pcb_espera_algun_semaforo);
+    t_list* pcbsDeadlockBlocked = list_filter(cola_planificacion_get_list(pcbsBlocked), pcb_espera_algun_semaforo);
+    t_list* pcbsDeadlockSusBlocked = list_filter(cola_planificacion_get_list(pcbsSusBlocked), pcb_espera_algun_semaforo);
     t_list* pcbsEnDeadlock = list_create();
     list_add_all(pcbsEnDeadlock, pcbsDeadlockBlocked);
     list_add_all(pcbsEnDeadlock, pcbsDeadlockSusBlocked);
@@ -194,15 +194,15 @@ void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_co
                     pcbsEnDeadlock,
                     semsEnDeadlock,
                     semaforosDelSistema->listaRecursos,
-                    pcbsBlocked->lista,
-                    pcbsSusBlocked->lista,
+                    cola_planificacion_get_list(pcbsBlocked),
+                    cola_planificacion_get_list(pcbsSusBlocked),
                     gradoMultiprog);
                 list_destroy(pcbsDeadlockBlocked);
                 list_destroy(pcbsDeadlockSusBlocked);
                 list_destroy(pcbsEnDeadlock);
                 list_destroy(semsEnDeadlock);
-                pcbsDeadlockBlocked = list_filter(pcbsBlocked->lista, pcb_espera_algun_semaforo);
-                pcbsDeadlockSusBlocked = list_filter(pcbsSusBlocked->lista, pcb_espera_algun_semaforo);
+                pcbsDeadlockBlocked = list_filter(cola_planificacion_get_list(pcbsBlocked), pcb_espera_algun_semaforo);
+                pcbsDeadlockSusBlocked = list_filter(cola_planificacion_get_list(pcbsSusBlocked), pcb_espera_algun_semaforo);
                 pcbsEnDeadlock = list_create();
                 list_add_all(pcbsEnDeadlock, pcbsDeadlockBlocked);
                 list_add_all(pcbsEnDeadlock, pcbsDeadlockSusBlocked);

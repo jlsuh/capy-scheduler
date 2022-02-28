@@ -50,18 +50,4 @@ typedef struct {
     pthread_mutex_t mutexRecursos;
 } t_cola_recursos;
 
-typedef struct {
-    t_queue *colaPCBs;
-    char *nombre;
-    uint32_t duracion;
-    sem_t instanciasDisponibles;
-    pthread_mutex_t mutexColaPCBs;
-} t_recurso_io;
-
-typedef struct {
-    t_list *lista;
-    sem_t instanciasDisponibles;
-    pthread_mutex_t mutex;
-} t_cola_planificacion;
-
 #endif

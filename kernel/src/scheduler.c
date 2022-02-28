@@ -12,6 +12,7 @@
 #include "common_utils.h"
 #include "deadlock.h"
 #include "mem_adapter.h"
+#include "recurso_io.h"
 #include "stream.h"
 
 extern t_log* kernelLogger;
@@ -50,20 +51,22 @@ static int get_pcb_index(t_pcb* pcb, t_list* lista) {
 }
 
 static void enqueue_pcb(t_pcb* pcb, t_cola_planificacion* cola) {
-    pthread_mutex_lock(&(cola->mutex));
-    list_add(cola->lista, pcb);
-    pthread_mutex_unlock(&(cola->mutex));
+    pthread_mutex_t* mutex = cola_planificacion_get_mutex(cola);
+    pthread_mutex_lock(mutex);
+    list_add(cola_planificacion_get_list(cola), pcb);
+    pthread_mutex_unlock(mutex);
 }
 
 static void dequeue_pcb(t_pcb* pcb, t_cola_planificacion* cola) {
-    pthread_mutex_lock(&(cola->mutex));
-    int posicion = get_pcb_index(pcb, cola->lista);
+    pthread_mutex_t* mutex = cola_planificacion_get_mutex(cola);
+    pthread_mutex_lock(mutex);
+    int posicion = get_pcb_index(pcb, cola_planificacion_get_list(cola));
     if (posicion != -1) {
-        list_remove(cola->lista, posicion);
+        list_remove(cola_planificacion_get_list(cola), posicion);
     } else {
         log_error(kernelLogger, "Kernel: No existe tal elemento en la cola");
     }
-    pthread_mutex_unlock(&(cola->mutex));
+    pthread_mutex_unlock(mutex);
 }
 
 static void pasar_de_susblocked_a_susready(t_pcb* pcb) {
@@ -77,25 +80,7 @@ static void pasar_de_blocked_a_ready(t_pcb* pcb) {
     dequeue_pcb(pcb, pcbsBlocked);
     pcb_set_status(pcb, READY);
     enqueue_pcb(pcb, pcbsReady);
-    sem_post(&(pcbsReady->instanciasDisponibles));
-}
-
-static t_cola_planificacion* cola_planificacion_create(int semInitVal) {
-    t_cola_planificacion* self = malloc(sizeof(*self));
-    self->lista = list_create();
-    pthread_mutex_init(&(self->mutex), NULL);
-    sem_init(&(self->instanciasDisponibles), 0, semInitVal);
-    return self;
-}
-
-static t_recurso_io* recurso_io_create(char* nombre, uint32_t duracion) {
-    t_recurso_io* recursoIO = malloc(sizeof(*recursoIO));
-    recursoIO->colaPCBs = queue_create();
-    recursoIO->nombre = nombre;
-    recursoIO->duracion = duracion;
-    sem_init(&(recursoIO->instanciasDisponibles), 0, 0);
-    pthread_mutex_init(&(recursoIO->mutexColaPCBs), NULL);
-    return recursoIO;
+    sem_post(cola_planificacion_get_instancias_disponibles(pcbsReady));
 }
 
 static void inicializar_dispositivos_io_config(t_cola_recursos* dispositivosIODelSistema) {
@@ -107,26 +92,27 @@ static void inicializar_dispositivos_io_config(t_cola_recursos* dispositivosIODe
         duracionDispositivo = atoi(duracionesIO[i]);
         recursoIO = recurso_io_create(dispositivosIO[i], duracionDispositivo);
         list_add(dispositivosIODelSistema->listaRecursos, recursoIO);
-        log_info(kernelLogger, "Kernel: Inicialización de recurso %s con duración de I/O de %d milisegundos", recursoIO->nombre, recursoIO->duracion);
+        log_info(kernelLogger, "Kernel: Inicialización de recurso %s con duración de I/O de %d milisegundos", recurso_io_get_nombre(recursoIO), recurso_io_get_duracion(recursoIO));
     }
 }
 
 static void ejecutar_rafagas_io(t_recurso_io* recursoIO, t_pcb* primerPCB) {
-    log_info(kernelLogger, "Dispositivo I/O <%s>: Carpincho ID %d ejecutando ráfagas I/O", recursoIO->nombre, pcb_get_pid(primerPCB));
-    intervalo_de_pausa(recursoIO->duracion);
-    log_info(kernelLogger, "Dispositivo I/O <%s>: Fin ráfagas I/O Carpincho ID %d", recursoIO->nombre, pcb_get_pid(primerPCB));
+    log_info(kernelLogger, "Dispositivo I/O <%s>: Carpincho ID %d ejecutando ráfagas I/O", recurso_io_get_nombre(recursoIO), pcb_get_pid(primerPCB));
+    intervalo_de_pausa(recurso_io_get_duracion(recursoIO));
+    log_info(kernelLogger, "Dispositivo I/O <%s>: Fin ráfagas I/O Carpincho ID %d", recurso_io_get_nombre(recursoIO), pcb_get_pid(primerPCB));
 }
 
 static noreturn void* iniciar_rutina_ejecucion_dispositivos_io(void* args) {
     t_recurso_io* recursoIO = (t_recurso_io*)args;
     for (;;) {
-        char* nombreDispositivo = string_from_format("Dispositivo I/O <%s>", recursoIO->nombre);
+        char* nombreDispositivo = string_from_format("Dispositivo I/O <%s>", recurso_io_get_nombre(recursoIO));
 
-        sem_wait(&(recursoIO->instanciasDisponibles));
+        sem_wait(recurso_io_get_sem_instancias_disponibles(recursoIO));
 
-        pthread_mutex_lock(&(recursoIO->mutexColaPCBs));
-        t_pcb* primerPCB = queue_pop(recursoIO->colaPCBs);
-        pthread_mutex_unlock(&(recursoIO->mutexColaPCBs));
+        pthread_mutex_t* mutex = recurso_io_get_mutex_cola_pcbs(recursoIO);
+        pthread_mutex_lock(mutex);
+        t_pcb* primerPCB = queue_pop(recurso_io_get_cola_pcbs(recursoIO));
+        pthread_mutex_unlock(mutex);
 
         ejecutar_rafagas_io(recursoIO, primerPCB);
 
@@ -162,18 +148,21 @@ static void iniciar_ejecucion_lista_dispositivos_io(void) {
 
 static t_pcb* get_and_remove_first_pcb_from_queue(t_cola_planificacion* cola) {
     t_pcb* pcb = NULL;
-    pthread_mutex_lock(&(cola->mutex));
-    if (!list_is_empty(cola->lista)) {
-        pcb = (t_pcb*)list_remove(cola->lista, 0);
+    pthread_mutex_t* mutex = cola_planificacion_get_mutex(cola);
+    pthread_mutex_lock(mutex);
+    t_list* listaPCBs = cola_planificacion_get_list(cola);
+    if (!list_is_empty(listaPCBs)) {
+        pcb = (t_pcb*)list_remove(listaPCBs, 0);
     }
-    pthread_mutex_unlock(&(cola->mutex));
+    pthread_mutex_unlock(mutex);
     return pcb;
 }
 
 static noreturn void* liberar_carpinchos_en_exit(void* _) {
     log_info(kernelLogger, "Largo Plazo: Hilo liberador de PCBs de Carpinchos en EXIT inicializado");
     for (;;) {
-        sem_wait(&(pcbsExit->instanciasDisponibles));
+        sem_t* instanciasDisponibles = cola_planificacion_get_instancias_disponibles(pcbsExit);
+        sem_wait(instanciasDisponibles);
 
         t_pcb* pcbALiberar = get_and_remove_first_pcb_from_queue(pcbsExit);
 
@@ -201,7 +190,7 @@ static noreturn void* iniciar_largo_plazo(void* _) {
         sem_wait(&gradoMultiprog);
         log_info(kernelLogger, "Largo Plazo: Se toma una instancia de Grado Multiprogramación");
 
-        if (!list_is_empty(pcbsSusReady->lista)) {
+        if (!list_is_empty(cola_planificacion_get_list(pcbsSusReady))) {
             sem_post(&transicionarSusReadyAready);
         } else {
             t_pcb* pcbQuePasaAReady = get_and_remove_first_pcb_from_queue(pcbsNew);
@@ -213,7 +202,7 @@ static noreturn void* iniciar_largo_plazo(void* _) {
             enqueue_pcb(pcbQuePasaAReady, pcbsReady);
             log_transition("Largo Plazo", "NEW", "READY", pcb_get_pid(pcbQuePasaAReady));
 
-            sem_post(&(pcbsReady->instanciasDisponibles));
+            sem_post(cola_planificacion_get_instancias_disponibles(pcbsReady));
         }
     }
 }
@@ -226,14 +215,15 @@ static noreturn void* transicion_susready_a_ready(void* _) {
         pcb_set_status(pcbQuePasaAReady, READY);
         enqueue_pcb(pcbQuePasaAReady, pcbsReady);
         log_transition("Mediano Plazo", "SUSP/READY", "READY", pcb_get_pid(pcbQuePasaAReady));
-        sem_post(&(pcbsReady->instanciasDisponibles));
+        sem_post(cola_planificacion_get_instancias_disponibles(pcbsReady));
     }
 }
 
 static bool hay_procesos_en_esta_cola(t_cola_planificacion* cola) {
-    pthread_mutex_lock(&(cola->mutex));
-    bool existeProcesos = list_size(cola->lista) > 0;
-    pthread_mutex_unlock(&(cola->mutex));
+    pthread_mutex_t* mutex = cola_planificacion_get_mutex(cola);
+    pthread_mutex_lock(mutex);
+    bool existeProcesos = list_size(cola_planificacion_get_list(cola)) > 0;
+    pthread_mutex_unlock(mutex);
     return existeProcesos;
 }
 
@@ -265,9 +255,11 @@ static bool existe_caso_de_suspension(void) {
 }
 
 static t_pcb* pop_ultimo_de_cola(t_cola_planificacion* cola) {
-    pthread_mutex_lock(&(cola->mutex));
-    t_pcb* pcb = list_remove(cola->lista, list_size(cola->lista) - 1);
-    pthread_mutex_unlock(&(cola->mutex));
+    pthread_mutex_t* mutex = cola_planificacion_get_mutex(cola);
+    pthread_mutex_lock(mutex);
+    t_list* lista = cola_planificacion_get_list(cola);
+    t_pcb* pcb = list_remove(lista, list_size(lista) - 1);
+    pthread_mutex_unlock(mutex);
     return pcb;
 }
 
@@ -343,14 +335,14 @@ static void tarea_call_IO_destroy(t_tarea_call_io* unaTareaCallIO) {
 }
 
 static bool es_este_dispositivo_io(t_recurso_io* recursoIO, t_tarea_call_io* callIO) {
-    return string_equals_ignore_case(recursoIO->nombre, callIO->nombre);
+    return string_equals_ignore_case(recurso_io_get_nombre(recursoIO), callIO->nombre);
 }
 
 static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
     t_recurso_io* recursoIO = list_find2(dispositivosIODelSistema->listaRecursos, (void*)es_este_dispositivo_io, callIO);
 
     if (recursoIO != NULL) {
-        char* nombreDispositivo = string_from_format("Dispositivo I/O <%s>", recursoIO->nombre);
+        char* nombreDispositivo = string_from_format("Dispositivo I/O <%s>", recurso_io_get_nombre(recursoIO));
 
         dequeue_pcb(pcb, pcbsExec);
 
@@ -365,13 +357,14 @@ static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
         log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, callIO->mensaje, pcb_get_pid(pcb));
         free(nombreDispositivo);
 
-        pthread_mutex_lock(&(recursoIO->mutexColaPCBs));
-        queue_push(recursoIO->colaPCBs, pcb);
-        pthread_mutex_unlock(&(recursoIO->mutexColaPCBs));
+        pthread_mutex_t* mutex = recurso_io_get_mutex_cola_pcbs(recursoIO);
+        pthread_mutex_lock(mutex);
+        queue_push(recurso_io_get_cola_pcbs(recursoIO), pcb);
+        pthread_mutex_unlock(mutex);
 
         evaluar_suspension(); /* Caso posible en donde la cola de planificación Blocked tenga al menos 1 PCB */
 
-        sem_post(&(recursoIO->instanciasDisponibles));
+        sem_post(recurso_io_get_sem_instancias_disponibles(recursoIO));
     } else {
         log_error(kernelLogger, "Dispositivo I/O <%s>: Recurso I/O no encontrado. Petición por Carpincho ID %d", callIO->nombre, pcb_get_pid(pcb));
     }
@@ -523,7 +516,7 @@ static void atender_peticiones_del_carpincho(t_pcb* pcb) {
             pcb_set_status(pcb, EXIT);
             enqueue_pcb(pcb, pcbsExit);
             log_transition("Corto Plazo", "EXEC", "EXIT", pcb_get_pid(pcb));
-            sem_post(&(pcbsExit->instanciasDisponibles));
+            sem_post(cola_planificacion_get_instancias_disponibles(pcbsExit));
             break;
         } else {
             t_buffer* buffer = buffer_create();
@@ -540,7 +533,7 @@ static void atender_peticiones_del_carpincho(t_pcb* pcb) {
 
 static noreturn void* iniciar_corto_plazo(void* _) {
     for (;;) {
-        sem_wait(&(pcbsReady->instanciasDisponibles));
+        sem_wait(cola_planificacion_get_instancias_disponibles(pcbsReady));
         log_info(kernelLogger, "Corto Plazo: Se toma una instancia de READY");
 
         t_pcb* pcbQuePasaAExec = elegir_pcb_segun_algoritmo(pcbsReady);
@@ -670,28 +663,30 @@ void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
 }
 
 t_pcb* elegir_en_base_a_sjf(t_cola_planificacion* colaPlanificacion) {
-    pthread_mutex_lock(&(colaPlanificacion->mutex));
-    t_pcb* pcbMenorEstimacion = (t_pcb*)list_get_minimum(colaPlanificacion->lista, (void*)pcb_minimum_est);
-    pthread_mutex_unlock(&(colaPlanificacion->mutex));
+    pthread_mutex_t* mutex = cola_planificacion_get_mutex(colaPlanificacion);
+    pthread_mutex_lock(mutex);
+    t_pcb* pcbMenorEstimacion = (t_pcb*)list_get_minimum(cola_planificacion_get_list(colaPlanificacion), (void*)pcb_minimum_est);
+    pthread_mutex_unlock(mutex);
     return pcbMenorEstimacion;
 }
 
 t_pcb* elegir_en_base_a_hrrn(t_cola_planificacion* colaPlanificacion) {
-    pthread_mutex_lock(&(colaPlanificacion->mutex));
+    pthread_mutex_t* mutex = cola_planificacion_get_mutex(colaPlanificacion);
+    pthread_mutex_lock(mutex);
     time_t now;
     time(&now);
-    t_pcb* pcbConMayorRR = list_get(colaPlanificacion->lista, 0);
+    t_pcb* pcbConMayorRR = list_get(cola_planificacion_get_list(colaPlanificacion), 0);
     t_pcb* pcbTemp = NULL;
-    for (int i = 1; i < list_size(pcbsReady->lista); i++) {
-        pcbTemp = list_get(pcbsReady->lista, i);
+    t_list* listaPCBsReady = cola_planificacion_get_list(pcbsReady);
+    for (int i = 1; i < list_size(listaPCBsReady); i++) {
+        pcbTemp = list_get(listaPCBsReady, i);
         double supuestoMayor = response_ratio(pcbConMayorRR, now);
         double tempRR = response_ratio(pcbTemp, now);
         if (tempRR > supuestoMayor) {
             pcbConMayorRR = pcbTemp;
         }
     }
-    pthread_mutex_unlock(&(colaPlanificacion->mutex));
-
+    pthread_mutex_unlock(mutex);
     return pcbConMayorRR;
 }
 
