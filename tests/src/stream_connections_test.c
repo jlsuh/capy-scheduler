@@ -48,9 +48,9 @@ void test_es_posible_serializar_un_string_enviarlo_y_deserializarlo(void) {
     t_buffer* buffer = buffer_create();
     buffer_pack_string(buffer, testString);
 
-    void* streamAEnviar = get_stream_to_send(STRING, buffer);
+    void* streamAEnviar = __stream_create(STRING, buffer);
 
-    stream_send(sockClienteDelServ, streamAEnviar, buffer->size);
+    __stream_send(sockClienteDelServ, streamAEnviar, buffer->size);
     buffer_destroy(buffer);
     free(streamAEnviar);
 

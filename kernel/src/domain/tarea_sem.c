@@ -1,6 +1,5 @@
 #include "domain/tarea_sem.h"
 
-#include <stdint.h>
 #include <stdlib.h>
 
 struct t_tarea_sem {

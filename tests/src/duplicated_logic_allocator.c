@@ -18,7 +18,7 @@ double __media_exponencial(double realAnterior, double estAnterior) {
     return ALFA * realAnterior + (1 - ALFA) * estAnterior;
 }
 
-double response_ratio(t_pcb* pcb, clock_t now) {
+double pcb_response_ratio(t_pcb* pcb, clock_t now) {
     return get_diferencial_de_tiempo(now, pcb->hrrn->w) / pcb->hrrn->s + 1;
 }
 
@@ -29,7 +29,7 @@ t_pcb* elegir_en_base_a_hrrn(t_list* lista) {
 
     for (int i = 1; i < list_size(lista); i++) {
         pcbTemp = list_get(lista, i);
-        if (response_ratio(pcbTemp, now) > response_ratio(pcbConMayorRR, now)) {
+        if (pcb_response_ratio(pcbTemp, now) > pcb_response_ratio(pcbConMayorRR, now)) {
             pcbConMayorRR = pcbTemp;
         }
     }

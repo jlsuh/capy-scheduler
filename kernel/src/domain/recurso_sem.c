@@ -1,9 +1,6 @@
 #include "domain/recurso_sem.h"
 
-#include <commons/collections/queue.h>
 #include <commons/string.h>
-#include <pthread.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,14 +26,14 @@ t_recurso_sem* recurso_sem_create(char* nombre, int32_t valor) {
     return self;
 }
 
-void recurso_sem_destroy(t_recurso_sem* unSemaforo) {
-    queue_destroy(unSemaforo->colaPCBs);
-    pthread_mutex_destroy(unSemaforo->mutexColaPCBs);
-    pthread_mutex_destroy(unSemaforo->mutexValorSemaforo);
-    free(unSemaforo->mutexColaPCBs);
-    free(unSemaforo->mutexValorSemaforo);
-    free(unSemaforo->nombre);
-    free(unSemaforo);
+void recurso_sem_destroy(t_recurso_sem* self) {
+    queue_destroy(self->colaPCBs);
+    pthread_mutex_destroy(self->mutexColaPCBs);
+    pthread_mutex_destroy(self->mutexValorSemaforo);
+    free(self->mutexColaPCBs);
+    free(self->mutexValorSemaforo);
+    free(self->nombre);
+    free(self);
 }
 
 void recurso_sem_inc_cant_instancias(t_recurso_sem* self) {

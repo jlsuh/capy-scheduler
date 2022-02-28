@@ -14,10 +14,10 @@ t_tarea_call_io *tarea_call_io_create(void) {
     return self;
 }
 
-void tarea_call_IO_destroy(t_tarea_call_io *unaTareaCallIO) {
-    free(unaTareaCallIO->mensaje);
-    free(unaTareaCallIO->nombre);
-    free(unaTareaCallIO);
+void tarea_call_IO_destroy(t_tarea_call_io *self) {
+    free(self->mensaje);
+    free(self->nombre);
+    free(self);
 }
 
 char *tarea_call_io_get_nombre(t_tarea_call_io *self) {

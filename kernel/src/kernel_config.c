@@ -1,9 +1,7 @@
 #include "kernel_config.h"
 
 #include <commons/config.h>
-#include <commons/log.h>
 #include <commons/string.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>

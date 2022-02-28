@@ -11,7 +11,7 @@ bool __es_este_pcb(void *pcbVoid, void *pidVoid);
 bool kernel_sem_wait(t_recurso_sem *sem, t_pcb *pcbWait);
 double get_diferencial_de_tiempo(clock_t tiempoFinal, clock_t tiempoInicial);
 double __media_exponencial(double realAnterior, double estAnterior);
-double response_ratio(t_pcb *pcb, clock_t now);
+double pcb_response_ratio(t_pcb *pcb, clock_t now);
 t_cola_recursos *cola_recursos_create(void);
 t_pcb *elegir_en_base_a_hrrn(t_list *lista);
 t_pcb *elegir_en_base_a_sjf(t_list *lista);

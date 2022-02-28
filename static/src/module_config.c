@@ -2,15 +2,15 @@
 
 #include <stdlib.h>
 
-int config_init(void* moduleConfig, char* pathToConfig, t_log* logger,
+int config_init(void* moduleConfig, char* pathToConfig, t_log* moduleLogger,
                 void (*config_initializer)(void* moduleConfig, t_config* tempConfig)) {
     t_config* tempConfig = config_create(pathToConfig);
     if (tempConfig == NULL) {
-        log_error(logger, "Path \"%s\" no encontrado", pathToConfig);
+        log_error(moduleLogger, "Path \"%s\" no encontrado", pathToConfig);
         return EXIT_FAILURE;
     }
     config_initializer(moduleConfig, tempConfig);
-    log_info(logger, "Inicialización de campos correcta");
+    log_info(moduleLogger, "Inicialización de campos correcta");
     config_destroy(tempConfig);
     return EXIT_SUCCESS;
 }

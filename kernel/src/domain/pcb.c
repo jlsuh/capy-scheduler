@@ -1,6 +1,5 @@
 #include "domain/pcb.h"
 
-#include <commons/collections/dictionary.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +8,16 @@
 #include "algorithms/hrrn.h"
 #include "algorithms/sjf.h"
 #include "kernel_config.h"
+
+enum t_status {
+    NEW,
+    READY,
+    EXEC,
+    BLOCKED,
+    SUSBLOCKED,
+    SUSREADY,
+    EXIT
+};
 
 struct t_pcb {
     uint32_t *socket;
@@ -24,22 +33,11 @@ struct t_pcb {
 
 extern t_kernel_config *kernelCfg;
 
-static double __time_differential(time_t tiempoFinal, time_t tiempoInicial) {
-    double diferencialT = difftime(tiempoFinal, tiempoInicial);
-    return diferencialT;
-}
-
 static void __pcb_hrrn_create(t_pcb *self) {
     self->hrrn = hrrn_create();
     double serviceTime = kernel_config_get_est_inicial(kernelCfg);
     hrrn_set_service_time(self->hrrn, serviceTime);
     hrrn_set_waiting_time(self->hrrn);
-}
-
-static double __media_exponencial(double realAnterior, double estAnterior) {
-    /* Est(n) = α . R(n-1) + (1 - α) . Est(n-1) */
-    double const alfa = kernel_config_get_alfa(kernelCfg);
-    return alfa * realAnterior + (1 - alfa) * estAnterior;
 }
 
 static void __pcb_sjf_create(t_pcb *self) {
@@ -58,6 +56,17 @@ static void __pcb_sjf_destroy(t_pcb *pcb) {
     pcb_destroy(pcb);
 }
 
+static double __time_differential(time_t tiempoFinal, time_t tiempoInicial) {
+    double diferencialT = difftime(tiempoFinal, tiempoInicial);
+    return diferencialT;
+}
+
+static double __media_exponencial(double realAnterior, double estAnterior) {
+    /* Est(n) = α . R(n-1) + (1 - α) . Est(n-1) */
+    double const alfa = kernel_config_get_alfa(kernelCfg);
+    return alfa * realAnterior + (1 - alfa) * estAnterior;
+}
+
 static void __pcb_hrrn_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempoInicial) {
     double realAnterior = __time_differential(tiempoFinal, tiempoInicial);
     double newServiceTime = __media_exponencial(realAnterior, hrrn_get_service_time(self->hrrn));
@@ -69,6 +78,22 @@ static void __pcb_sjf_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempoI
     double realAnterior = __time_differential(tiempoFinal, tiempoInicial);
     double newEstActual = __media_exponencial(realAnterior, sjf_get_est_actual(self->sjf));
     sjf_set_est_actual(self->sjf, newEstActual);
+}
+
+bool pcb_status_is_blocked(t_pcb *self) {
+    return self->status == BLOCKED;
+}
+
+bool pcb_status_is_susblocked(t_pcb *self) {
+    return self->status == SUSBLOCKED;
+}
+
+bool pcb_is_hrrn(void) {
+    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "HRRN") == 0;
+}
+
+bool pcb_is_sjf(void) {
+    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "SJF") == 0;
 }
 
 t_pcb *pcb_create(uint32_t *socket, uint32_t pid) {
@@ -107,21 +132,37 @@ t_pcb *pcb_minimum_est(t_pcb *aPCB, t_pcb *anotherPCB) {
     return sjf_get_est_actual(aPCB->sjf) <= sjf_get_est_actual(anotherPCB->sjf) ? aPCB : anotherPCB;
 }
 
-bool pcb_is_hrrn(void) {
-    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "HRRN") == 0;
-}
-
-bool pcb_is_sjf(void) {
-    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "SJF") == 0;
-}
-
 bool pcb_espera_algun_semaforo(void *pcbVoid) {
     t_pcb *pcb = (t_pcb *)pcbVoid;
     return deadlock_espera_en_semaforo(pcb->deadlockInfo);
 }
 
-double response_ratio(t_pcb *pcb, time_t now) {
+double pcb_response_ratio(t_pcb *pcb, time_t now) {
     return __time_differential(now, hrrn_get_waiting_time(pcb->hrrn)) / hrrn_get_service_time(pcb->hrrn) + 1;
+}
+
+void pcb_transition_to_ready(t_pcb *self) {
+    self->status = READY;
+}
+
+void pcb_transition_to_susready(t_pcb *self) {
+    self->status = SUSREADY;
+}
+
+void pcb_transition_to_blocked(t_pcb *self) {
+    self->status = BLOCKED;
+}
+
+void pcb_transition_to_susblocked(t_pcb *self) {
+    self->status = SUSBLOCKED;
+}
+
+void pcb_transition_to_exit(t_pcb *self) {
+    self->status = EXIT;
+}
+
+void pcb_transition_to_exec(t_pcb *self) {
+    self->status = EXEC;
 }
 
 uint32_t *pcb_get_socket(t_pcb *self) {

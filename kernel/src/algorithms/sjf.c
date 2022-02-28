@@ -12,10 +12,10 @@ t_sjf* sjf_create(void) {
     return self;
 }
 
-void sjf_set_est_actual(t_sjf* self, double estActual) {
-    self->estActual = estActual;
-}
-
 double sjf_get_est_actual(t_sjf* self) {
     return self->estActual;
+}
+
+void sjf_set_est_actual(t_sjf* self, double estActual) {
+    self->estActual = estActual;
 }

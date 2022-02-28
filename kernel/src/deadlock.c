@@ -1,12 +1,15 @@
 #include "deadlock.h"
 
 #include <commons/collections/list.h>
+#include <commons/log.h>
 #include <commons/string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "common_flags.h"
 #include "common_utils.h"
+#include "domain/pcb.h"
 #include "scheduler.h"
 #include "stream.h"
 
@@ -22,6 +25,23 @@ struct t_deadlock {
     t_recurso_sem* esperaEnSemaforo;
     pthread_mutex_t* mutexDict;
 };
+
+t_deadlock* deadlock_create(void) {
+    t_deadlock* self = malloc(sizeof(*self));
+    self->semaforosQueRetiene = dictionary_create();
+    self->esperaEnSemaforo = NULL;
+    self->mutexDict = malloc(sizeof(*(self->mutexDict)));
+    pthread_mutex_init(self->mutexDict, NULL);
+    return self;
+}
+
+void deadlock_destroy(t_deadlock* self) {
+    t_dictionary* dict = self->semaforosQueRetiene;
+    dictionary_destroy_and_destroy_elements(dict, free);
+    pthread_mutex_destroy(deadlock_get_dict_mutex(self));
+    free(deadlock_get_dict_mutex(self));
+    free(self);
+}
 
 static bool __deadlock_retiene_instancias_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
     return dictionary_has_key(pcb_get_deadlock_info(pcb)->semaforosQueRetiene, recurso_sem_get_nombre(sem));
@@ -107,13 +127,13 @@ static bool __deadlock_eliminar_pcb_de_lista(t_pcb* pcb, t_list* lista) {
 
 static void __deadlock_finalizar_carpincho_en_deadlock(t_pcb* pcb) {
     char* prevStatus = NULL;
-    if (pcb_get_status(pcb) == BLOCKED) {
+    if (pcb_status_is_blocked(pcb)) {
         prevStatus = string_from_format("BLOCKED");
-    } else if (pcb_get_status(pcb) == SUSBLOCKED) {
+    } else if (pcb_status_is_susblocked(pcb)) {
         prevStatus = string_from_format("SUSP/BLOCKED");
     }
     log_info(kernelLogger, "Deadlock: Finalización abrupta del PCB ID %d por resolución de deadlocks", pcb_get_pid(pcb));
-    send_empty_buffer(DEADLOCK_END, *pcb_get_socket(pcb));
+    stream_send_empty_buffer(DEADLOCK_END, *pcb_get_socket(pcb));
     log_transition("Deadlock", prevStatus, "EXIT", pcb_get_pid(pcb));
     pcb_algoritmo_destroy(pcb);
     free(prevStatus);
@@ -151,23 +171,6 @@ static void __deadlock_recuperarse_del_deadlock(t_list* pcbsEnDeadlock, t_list* 
         }
     }
     __deadlock_finalizar_carpincho_en_deadlock(pcbDeMayorPID);
-}
-
-t_deadlock* deadlock_create(void) {
-    t_deadlock* self = malloc(sizeof(*self));
-    self->semaforosQueRetiene = dictionary_create();
-    self->esperaEnSemaforo = NULL;
-    self->mutexDict = malloc(sizeof(*(self->mutexDict)));
-    pthread_mutex_init(self->mutexDict, NULL);
-    return self;
-}
-
-void deadlock_destroy(t_deadlock* self) {
-    t_dictionary* dict = deadlock_get_semaforos_que_retiene(self);
-    dictionary_destroy_and_destroy_elements(dict, free);
-    pthread_mutex_destroy(deadlock_get_dict_mutex(self));
-    free(deadlock_get_dict_mutex(self));
-    free(self);
 }
 
 bool deadlock_espera_en_semaforo(t_deadlock* self) {
@@ -222,10 +225,6 @@ t_dictionary* deadlock_get_dict(t_deadlock* self) {
 
 pthread_mutex_t* deadlock_get_dict_mutex(t_deadlock* self) {
     return self->mutexDict;
-}
-
-t_dictionary* deadlock_get_semaforos_que_retiene(t_deadlock* self) {
-    return self->semaforosQueRetiene;
 }
 
 void deadlock_set_semaforo_en_que_espera(t_deadlock* self, t_recurso_sem* sem) {

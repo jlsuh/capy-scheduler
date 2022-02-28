@@ -20,8 +20,8 @@
 t_log* kernelLogger;
 t_kernel_config* kernelCfg;
 
-static noreturn void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t);
-static void crear_hilo_handler_conexion_entrante(int* socket);
+static noreturn void __aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t);
+static void __crear_hilo_handler_conexion_entrante(int* socket);
 
 int main(int argc, char* argv[]) {
     bool activeConsole = true;
@@ -46,14 +46,14 @@ int main(int argc, char* argv[]) {
             exit(0);
         }
 
-        uint32_t response = get_op_code(memSocket);
-        recv_empty_buffer(memSocket);
+        uint32_t response = stream_recv_op_code(memSocket);
+        stream_recv_empty_buffer(memSocket);
 
         if (MEMORIA == response) {
-            send_empty_buffer(OK_CONTINUE, memSocket);
+            stream_send_empty_buffer(OK_CONTINUE, memSocket);
             log_info(kernelLogger, "Kernel: Memoria establece conexión con Kernel en socket ID %d", memSocket);
         } else {
-            send_empty_buffer(FAIL, memSocket); /* Es entidad conectante pero no es Memoria */
+            stream_send_empty_buffer(FAIL, memSocket); /* Es entidad conectante pero no es Memoria */
             log_error(kernelLogger, "Kernel: Error al intentar establecer conexión con Módulo Memoria");
             liberar_modulo_kernel(kernelLogger, kernelCfg);
             exit(0);
@@ -61,28 +61,28 @@ int main(int argc, char* argv[]) {
     }
 
     iniciar_planificacion();
-    aceptar_conexiones_kernel(socketEscucha, cliente, len);
+    __aceptar_conexiones_kernel(socketEscucha, cliente, len);
 
     liberar_modulo_kernel(kernelLogger, kernelCfg);
 
     return EXIT_SUCCESS;
 }
 
-static noreturn void aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t len) {
+static noreturn void __aceptar_conexiones_kernel(int socketEscucha, struct sockaddr cliente, socklen_t len) {
     log_info(kernelLogger, "Kernel: A la escucha de nuevas conexiones en puerto %d", socketEscucha);
     int* socketCliente;
     for (;;) {
         socketCliente = malloc(sizeof(*socketCliente));
         *socketCliente = accept(socketEscucha, &cliente, &len);
         if (*socketCliente > 0) {
-            crear_hilo_handler_conexion_entrante(socketCliente);
+            __crear_hilo_handler_conexion_entrante(socketCliente);
         } else {
             log_error(kernelLogger, "Kernel: Error al aceptar conexión: %s", strerror(errno));
         }
     }
 }
 
-static void crear_hilo_handler_conexion_entrante(int* socket) {
+static void __crear_hilo_handler_conexion_entrante(int* socket) {
     pthread_t threadSuscripcion;
     pthread_create(&threadSuscripcion, NULL, encolar_en_new_nuevo_carpincho_entrante, (void*)socket);
     pthread_detach(threadSuscripcion);

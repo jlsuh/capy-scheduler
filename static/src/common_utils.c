@@ -4,27 +4,14 @@
 #include <stdlib.h>
 #include <time.h>
 
-///////////////////////////// COMMONS - Funciones Personalizadas /////////////////////////////
-void* list_find2(t_list* self, bool (*condition)(void*, void*), void* data) {
-    t_link_element *element, *newElement = list_create_element(data);
-
-    bool _find_by_condition(t_link_element * element, int i) {
-        return element == NULL || condition(element->data, newElement->data);
-    }
-    element = list_find_element(self, _find_by_condition);
-
-    free(newElement);
-    return element != NULL ? element->data : NULL;
-}
-
-t_link_element* list_create_element(void* data) {
+static t_link_element* __list_create_element(void* data) {
     t_link_element* element = malloc(sizeof(*element));
     element->data = data;
     element->next = NULL;
     return element;
 }
 
-t_link_element* list_find_element(t_list* self, bool (*cutting_condition)(t_link_element*, int)) {
+static t_link_element* __list_find_element(t_list* self, bool (*cutting_condition)(t_link_element*, int)) {
     t_link_element* element = self->head;
     int index = 0;
 
@@ -36,8 +23,16 @@ t_link_element* list_find_element(t_list* self, bool (*cutting_condition)(t_link
     return element;
 }
 
-void config_iterate_array(char** strings, void (*closure)(char*)) {
-    string_iterate_lines(strings, (void*)closure);
+void* list_find2(t_list* self, bool (*condition)(void*, void*), void* data) {
+    t_link_element *element, *newElement = __list_create_element(data);
+
+    bool _find_by_condition(t_link_element * element, int i) {
+        return element == NULL || condition(element->data, newElement->data);
+    }
+    element = __list_find_element(self, _find_by_condition);
+
+    free(newElement);
+    return element != NULL ? element->data : NULL;
 }
 
 int list_get_index(t_list* list, bool (*cutting_condition)(void*, void*), void* target) {

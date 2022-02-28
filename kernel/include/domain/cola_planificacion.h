@@ -7,9 +7,9 @@
 
 typedef struct t_cola_planificacion t_cola_planificacion;
 
-t_list* cola_planificacion_get_list(t_cola_planificacion*);
-sem_t* cola_planificacion_get_instancias_disponibles(t_cola_planificacion*);
-pthread_mutex_t* cola_planificacion_get_mutex(t_cola_planificacion*);
-t_cola_planificacion* cola_planificacion_create(int semInitVal);
+pthread_mutex_t *cola_planificacion_get_mutex(t_cola_planificacion *);
+sem_t *cola_planificacion_get_instancias_disponibles(t_cola_planificacion *);
+t_cola_planificacion *cola_planificacion_create(int semInitVal);
+t_list *cola_planificacion_get_list(t_cola_planificacion *);
 
 #endif
