@@ -2,7 +2,7 @@
 #define PCB_H_INCLUDED
 
 #include "deadlock.h"
-#include "kernel_structs.h"
+#include "common_flags.h"
 
 typedef struct t_pcb t_pcb;
 

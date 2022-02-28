@@ -1,11 +1,12 @@
 #ifndef DEADLOCK_H_INCLUDED
 #define DEADLOCK_H_INCLUDED
 
+#include <commons/collections/dictionary.h>
 #include <stdbool.h>
 
 #include "cola_planificacion.h"
 #include "cola_recursos.h"
-#include "kernel_structs.h"
+#include "common_flags.h"
 #include "recurso_sem.h"
 
 typedef struct t_deadlock t_deadlock;

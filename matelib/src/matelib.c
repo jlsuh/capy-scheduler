@@ -1,12 +1,13 @@
 #include <commons/config.h>
 #include <matelib.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "buffer.h"
+#include "common_flags.h"
 #include "connections.h"
-#include "kernel_structs.h"
 #include "stream.h"
 
 #define MATELIB_CFG_PATH "cfg/matelib_config.cfg"

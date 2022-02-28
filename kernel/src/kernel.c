@@ -8,9 +8,9 @@
 #include <string.h>
 #include <sys/socket.h>
 
+#include "common_flags.h"
 #include "connections.h"
 #include "kernel_config.h"
-#include "kernel_structs.h"
 #include "scheduler.h"
 #include "stream.h"
 

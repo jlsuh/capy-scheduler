@@ -14,6 +14,8 @@
 #include "mem_adapter.h"
 #include "recurso_io.h"
 #include "stream.h"
+#include "tarea_call_io.h"
+#include "tarea_sem.h"
 
 extern t_log* kernelLogger;
 extern t_kernel_config* kernelCfg;
@@ -297,50 +299,43 @@ static t_pcb* elegir_pcb_segun_algoritmo(t_cola_planificacion* cola) {
 }
 
 static t_tarea_sem* buffer_unpack_tarea_sem(t_buffer* buffer) {
-    t_tarea_sem* peticionSem = malloc(sizeof(*peticionSem));
-    peticionSem->nombre = buffer_unpack_string(buffer);
-
-    return peticionSem;
+    t_tarea_sem* tareaSem = tarea_sem_create();
+    char* nombre = buffer_unpack_string(buffer);
+    tarea_sem_set_nombre(tareaSem, nombre);
+    return tareaSem;
 }
 
 static t_tarea_sem* buffer_unpack_tarea_sem_init(t_buffer* buffer) {
-    t_tarea_sem* peticionSem = buffer_unpack_tarea_sem(buffer);
-    buffer_unpack(buffer, &(peticionSem->valor), sizeof(peticionSem->valor));
-    return peticionSem;
+    t_tarea_sem* tareaSem = buffer_unpack_tarea_sem(buffer);
+    int32_t valor = -1;
+    buffer_unpack(buffer, &valor, sizeof(valor));
+    tarea_sem_set_valor_inicial(tareaSem, valor);
+    return tareaSem;
 }
 
 static t_tarea_call_io* buffer_unpack_tarea_call_io(t_buffer* buffer) {
-    t_tarea_call_io* peticionCallIO = malloc(sizeof(*peticionCallIO));
-    peticionCallIO->nombre = buffer_unpack_string(buffer);
-    peticionCallIO->mensaje = buffer_unpack_string(buffer);
-    return peticionCallIO;
+    t_tarea_call_io* tareaCallIO = tarea_call_io_create();
+    char* nombre = buffer_unpack_string(buffer);
+    void* mensaje = buffer_unpack_string(buffer);
+    tarea_call_io_set_nombre(tareaCallIO, nombre);
+    tarea_call_io_set_mensaje(tareaCallIO, mensaje);
+    return tareaCallIO;
 }
 
 static void kernel_sem_init(t_tarea_sem* unaTareaDeSem, t_pcb* pcb) {
-    t_recurso_sem* recursoSem = recurso_sem_create(unaTareaDeSem->nombre, unaTareaDeSem->valor);
+    t_recurso_sem* recursoSem = recurso_sem_create(tarea_sem_get_nombre(unaTareaDeSem), tarea_sem_get_valor_inicial(unaTareaDeSem));
     pthread_mutex_t* mutex = cola_recursos_get_mutex(semaforosDelSistema);
     pthread_mutex_lock(mutex);
     list_add(cola_recursos_get_list(semaforosDelSistema), recursoSem);
     pthread_mutex_unlock(mutex);
 }
 
-static void tarea_sem_destroy(t_tarea_sem* unaTareaSem) {
-    free(unaTareaSem->nombre);
-    free(unaTareaSem);
+static bool es_este_dispositivo_io(t_recurso_io* recursoIO, t_tarea_call_io* tareaCallIO) {
+    return string_equals_ignore_case(recurso_io_get_nombre(recursoIO), tarea_call_io_get_nombre(tareaCallIO));
 }
 
-static void tarea_call_IO_destroy(t_tarea_call_io* unaTareaCallIO) {
-    free(unaTareaCallIO->mensaje);
-    free(unaTareaCallIO->nombre);
-    free(unaTareaCallIO);
-}
-
-static bool es_este_dispositivo_io(t_recurso_io* recursoIO, t_tarea_call_io* callIO) {
-    return string_equals_ignore_case(recurso_io_get_nombre(recursoIO), callIO->nombre);
-}
-
-static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
-    t_recurso_io* recursoIO = list_find2(cola_recursos_get_list(dispositivosIODelSistema), (void*)es_este_dispositivo_io, callIO);
+static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* tareaCallIO) {
+    t_recurso_io* recursoIO = list_find2(cola_recursos_get_list(dispositivosIODelSistema), (void*)es_este_dispositivo_io, tareaCallIO);
 
     if (recursoIO != NULL) {
         char* nombreDispositivo = string_from_format("Dispositivo I/O <%s>", recurso_io_get_nombre(recursoIO));
@@ -355,7 +350,7 @@ static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
         log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
 
         log_transition(nombreDispositivo, "EXEC", "BLOCKED", pcb_get_pid(pcb));
-        log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, callIO->mensaje, pcb_get_pid(pcb));
+        log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, tarea_call_io_get_mensaje(tareaCallIO), pcb_get_pid(pcb));
         free(nombreDispositivo);
 
         pthread_mutex_t* mutex = recurso_io_get_mutex_cola_pcbs(recursoIO);
@@ -367,7 +362,7 @@ static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
 
         sem_post(recurso_io_get_sem_instancias_disponibles(recursoIO));
     } else {
-        log_error(kernelLogger, "Dispositivo I/O <%s>: Recurso I/O no encontrado. Petición por Carpincho ID %d", callIO->nombre, pcb_get_pid(pcb));
+        log_error(kernelLogger, "Dispositivo I/O <%s>: Recurso I/O no encontrado. Petición por Carpincho ID %d", tarea_call_io_get_nombre(tareaCallIO), pcb_get_pid(pcb));
     }
 }
 
@@ -390,14 +385,14 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
         case SEM_INIT:
             unaTareaSem = buffer_unpack_tarea_sem_init(buffer);
             pthread_mutex_lock(mutexSemsSist);
-            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, tarea_sem_get_nombre(unaTareaSem));
             pthread_mutex_unlock(mutexSemsSist);
 
             if (sem == NULL) {
                 kernel_sem_init(unaTareaSem, pcb);
-                log_info(kernelLogger, "SEM_INIT <Carpincho %d>: Inicialización semáforo \"%s\" con valor %d", pcb_get_pid(pcb), unaTareaSem->nombre, unaTareaSem->valor);
+                log_info(kernelLogger, "SEM_INIT <Carpincho %d>: Inicialización semáforo \"%s\" con valor inicial %d", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem), tarea_sem_get_valor_inicial(unaTareaSem));
             } else {
-                log_error(kernelLogger, "SEM_INIT <Carpincho %d>: Intento de inicialización semáforo \"%s\" ya existente en sistema", pcb_get_pid(pcb), unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_INIT <Carpincho %d>: Intento de inicialización semáforo \"%s\" ya existente en sistema", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
             send_empty_buffer(OK_CONTINUE, socket);
@@ -406,7 +401,7 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
         case SEM_WAIT:
             unaTareaSem = buffer_unpack_tarea_sem(buffer);
             pthread_mutex_lock(mutexSemsSist);
-            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, tarea_sem_get_nombre(unaTareaSem));
             pthread_mutex_unlock(mutexSemsSist);
 
             if (sem != NULL) {
@@ -414,12 +409,12 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
                 esBloqueante = kernel_sem_wait(sem, pcb);
                 log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
                 if (esBloqueante) {
-                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Se bloquea en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), unaTareaSem->nombre, recurso_sem_get_valor_actual(sem));
+                    log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Se bloquea en semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem), recurso_sem_get_valor_actual(sem));
                 } else {
                     log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Continúa su ejecución. Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_valor_actual(sem));
                 }
             } else {
-                log_error(kernelLogger, "SEM_WAIT <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_WAIT <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
             send_empty_buffer(OK_CONTINUE, socket);
@@ -428,7 +423,7 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
         case SEM_POST:
             unaTareaSem = buffer_unpack_tarea_sem(buffer);
             pthread_mutex_lock(mutexSemsSist);
-            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, tarea_sem_get_nombre(unaTareaSem));
             pthread_mutex_unlock(mutexSemsSist);
 
             if (sem != NULL) {
@@ -444,7 +439,7 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
                     log_info(kernelLogger, "SEM_POST <Carpincho %d>: Ningún carpincho en cola de bloqueados de semáforo \"%s\". Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_nombre(sem), recurso_sem_get_valor_actual(sem));
                 }
             } else {
-                log_error(kernelLogger, "SEM_POST <Carpincho %d>: Semáforo \"%s\" no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_POST <Carpincho %d>: Semáforo \"%s\" no encontrado", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
             send_empty_buffer(OK_CONTINUE, socket);
@@ -453,7 +448,7 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
         case SEM_DESTROY:
             unaTareaSem = buffer_unpack_tarea_sem(buffer);
             pthread_mutex_lock(mutexSemsSist);
-            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, tarea_sem_get_nombre(unaTareaSem));
             pthread_mutex_unlock(mutexSemsSist);
 
             if (sem != NULL) {
@@ -468,7 +463,7 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
                     log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Denegación de eliminación de semáforo \"%s\". Cantidad de procesos bloqueados en semáforo: %d", pcb_get_pid(pcb), nombre, queue_size(colaBloqueados));
                 }
             } else {
-                log_error(kernelLogger, "SEM_DESTROY <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), unaTareaSem->nombre);
+                log_error(kernelLogger, "SEM_DESTROY <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
             send_empty_buffer(OK_CONTINUE, socket);

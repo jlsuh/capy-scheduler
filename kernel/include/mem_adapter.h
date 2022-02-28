@@ -2,7 +2,7 @@
 #define MEM_ADAPTER_H_INCLUDED
 
 #include "buffer.h"
-#include "kernel_structs.h"
+#include "common_flags.h"
 #include "pcb.h"
 
 void enviar_mate_close_a_memoria(t_pcb *pcb);
