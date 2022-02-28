@@ -27,7 +27,7 @@ void* list_find2(t_list* self, bool (*condition)(void*, void*), void* data) {
     t_link_element *element, *newElement = __list_create_element(data);
 
     bool _find_by_condition(t_link_element * element, int i) {
-        return element == NULL || condition(element->data, newElement->data);
+        return NULL == element || condition(element->data, newElement->data);
     }
     element = __list_find_element(self, _find_by_condition);
 

@@ -30,7 +30,7 @@ int mate_init(mate_instance* libRef, char* configPath) {
     config_destroy(config);
 
     int32_t conexion = conectar_a_servidor(mateInner->ip, mateInner->puerto);
-    if (conexion == -1) {
+    if (-1 == conexion) {
         log_error(mateInner->mateLogger, "Carpincho: No se pudo establecer conexión con Backend. Valor conexión %d", conexion);
         liberar_recursos(mateInner);
         return resultado;
@@ -43,7 +43,7 @@ int mate_init(mate_instance* libRef, char* configPath) {
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_buffer(mateInner->socketConexion, buffer);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         libRef->group_info = mateInner;
         uint32_t pid;
@@ -61,13 +61,13 @@ int mate_init(mate_instance* libRef, char* configPath) {
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -86,7 +86,7 @@ int mate_call_io(mate_instance* libRef, mate_io_resource io, void* msg) {
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: I/O con mensaje \"%s\" exitosa en dispositivo <%s>", mateInner->pid, (char*)msg, io);
     } else {
@@ -96,13 +96,13 @@ int mate_call_io(mate_instance* libRef, mate_io_resource io, void* msg) {
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -133,7 +133,7 @@ int mate_sem_init(mate_instance* libRef, mate_sem_name sem, unsigned int value) 
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: Inicialización de semáforo %s con valor %d exitosa", mateInner->pid, sem, value);
     } else {
@@ -143,13 +143,13 @@ int mate_sem_init(mate_instance* libRef, mate_sem_name sem, unsigned int value) 
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -169,7 +169,7 @@ int mate_sem_wait(mate_instance* libRef, mate_sem_name sem) {
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: Wait al semáforo %s exitosa", mateInner->pid, sem);
     } else {
@@ -179,13 +179,13 @@ int mate_sem_wait(mate_instance* libRef, mate_sem_name sem) {
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -204,7 +204,7 @@ int mate_sem_post(mate_instance* libRef, mate_sem_name sem) {
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: Post al semáforo %s exitosa", mateInner->pid, sem);
     } else {
@@ -214,13 +214,13 @@ int mate_sem_post(mate_instance* libRef, mate_sem_name sem) {
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -239,7 +239,7 @@ int mate_sem_destroy(mate_instance* libRef, mate_sem_name sem) {
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: Destrucción del semáforo %s exitosa", mateInner->pid, sem);
     } else {
@@ -249,13 +249,13 @@ int mate_sem_destroy(mate_instance* libRef, mate_sem_name sem) {
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -275,7 +275,7 @@ mate_pointer mate_memalloc(mate_instance* libRef, int size) {
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     mate_pointer direccionAllocada;
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         bufferMemAlloc = buffer_create();
         stream_recv_buffer(mateInner->socketConexion, bufferMemAlloc);
         buffer_unpack(bufferMemAlloc, &direccionAllocada, sizeof(direccionAllocada));
@@ -290,13 +290,13 @@ mate_pointer mate_memalloc(mate_instance* libRef, int size) {
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return direccionAllocada;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return direccionAllocada;
     }
 
@@ -316,7 +316,7 @@ int mate_memfree(mate_instance* libRef, mate_pointer addr) {
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: Liberación de memoria de dirección lógica %d exitosa", mateInner->pid, addr);
     } else {
@@ -327,13 +327,13 @@ int mate_memfree(mate_instance* libRef, mate_pointer addr) {
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -354,7 +354,7 @@ int mate_memread(mate_instance* libRef, mate_pointer origin, void* dest, int siz
 
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         bufferMemRead = buffer_create();
         stream_recv_buffer(mateInner->socketConexion, bufferMemRead);
@@ -370,13 +370,13 @@ int mate_memread(mate_instance* libRef, mate_pointer origin, void* dest, int siz
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 
@@ -399,7 +399,7 @@ int mate_memwrite(mate_instance* libRef, void* origin, mate_pointer dest, int si
     uint32_t response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: Escritura de %d Bytes en memoria de dirección lógica %d exitosa", mateInner->pid, size, dest);
     } else {
@@ -410,13 +410,13 @@ int mate_memwrite(mate_instance* libRef, void* origin, mate_pointer dest, int si
     response = stream_recv_op_code(mateInner->socketConexion);
     stream_recv_empty_buffer(mateInner->socketConexion);
 
-    if (response == OK_CONTINUE) {
+    if (OK_CONTINUE == response) {
         return resultado;
-    } else if (response == DEADLOCK_END) {
+    } else if (DEADLOCK_END == response) {
         log_info(mateInner->mateLogger, "Carpincho %d: Finalización abrupta del carpincho por resolución de Deadlocks", mateInner->pid);
         liberar_recursos(mateInner);
         pthread_exit(NULL);
-    } else if (response == OK_FINISH) {
+    } else if (OK_FINISH == response) {
         return resultado;
     }
 

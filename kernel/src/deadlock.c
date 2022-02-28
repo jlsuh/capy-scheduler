@@ -72,10 +72,10 @@ static bool __deadlock_eliminar_celdas_nulas_consecutivas(t_list* firstToIterate
         bool existenCeldasNoNulas = false;
         for (int j = 0; j < list_size(firstToIterateList); j++) {
             /* Fijamos la fila: iteramos todos los semáforos para 1 pcb */
-            if (firstToIterateType == PCB_LIST) {
+            if (PCB_LIST == firstToIterateType) {
                 sem = list_get(pivotList, i);
                 pcb = list_get(firstToIterateList, j);
-            } else if (firstToIterateType == SEM_LIST) {
+            } else if (SEM_LIST == firstToIterateType) {
                 sem = list_get(firstToIterateList, j);
                 pcb = list_get(pivotList, i);
             }

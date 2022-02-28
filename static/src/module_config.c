@@ -5,7 +5,7 @@
 int config_init(void* moduleConfig, char* pathToConfig, t_log* moduleLogger,
                 void (*config_initializer)(void* moduleConfig, t_config* tempConfig)) {
     t_config* tempConfig = config_create(pathToConfig);
-    if (tempConfig == NULL) {
+    if (NULL == tempConfig) {
         log_error(moduleLogger, "Path \"%s\" no encontrado", pathToConfig);
         return EXIT_FAILURE;
     }

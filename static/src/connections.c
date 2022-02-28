@@ -24,25 +24,25 @@ int iniciar_servidor(char* ip, char* port) {
     }
 
     int serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
-    if (serverSocket == -1) {
+    if (-1 == serverSocket) {
         printf("Socket creation error\n%s", strerror(errno));
         return EXIT_FAILURE;
     }
 
     int sockOpt = setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal));
-    if (sockOpt == -1) {
+    if (-1 == sockOpt) {
         printf("Sockopt error\n%s", strerror(errno));
         return EXIT_FAILURE;
     }
 
     int bindVal = bind(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen);
-    if (bindVal == -1) {
+    if (-1 == bindVal) {
         printf("Mismatched bind\n%s", strerror(errno));
         return EXIT_FAILURE;
     }
 
     int listenVal = listen(serverSocket, SOMAXCONN);
-    if (listenVal == -1) {
+    if (-1 == listenVal) {
         printf("Listen error\n%s", strerror(errno));
         return EXIT_FAILURE;
     }
@@ -70,7 +70,7 @@ int conectar_a_servidor(char* ip, char* port) {
     }
     for (p = serverInfo; p != NULL; p = p->ai_next) {
         conn = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (conn == -1) {
+        if (-1 == conn) {
             continue;
         }
         if (connect(conn, p->ai_addr, p->ai_addrlen) != -1) {

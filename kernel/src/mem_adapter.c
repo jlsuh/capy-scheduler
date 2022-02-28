@@ -26,7 +26,7 @@ void enviar_memalloc_a_memoria(t_pcb* pcb, t_buffer* buffer) {
 
         uint32_t response = stream_recv_op_code(memSocket);
 
-        if (response == OK_CONTINUE) {
+        if (OK_CONTINUE == response) {
             t_buffer* responseBuffer = buffer_create();
             stream_recv_buffer(memSocket, responseBuffer);
             stream_send_buffer(responseBuffer, OK_CONTINUE, *pcb_get_socket(pcb));
@@ -58,7 +58,7 @@ void enviar_memwrite_a_memoria(t_pcb* pcb, t_buffer* buffer) {
 
         uint32_t response = stream_recv_op_code(memSocket);
 
-        if (response == OK_CONTINUE) {
+        if (OK_CONTINUE == response) {
             t_buffer* responseBuffer = buffer_create();
             stream_recv_buffer(memSocket, responseBuffer);
             stream_send_buffer(responseBuffer, OK_CONTINUE, *pcb_get_socket(pcb));
@@ -97,7 +97,7 @@ void enviar_memread_a_memoria(t_pcb* pcb, t_buffer* buffer) {
 
         uint32_t response = stream_recv_op_code(memSocket);
 
-        if (response == OK_CONTINUE) {
+        if (OK_CONTINUE == response) {
             t_buffer* responseBuffer = buffer_create();
             stream_recv_buffer(memSocket, responseBuffer);
             stream_send_buffer(responseBuffer, OK_CONTINUE, *pcb_get_socket(pcb));
@@ -133,7 +133,7 @@ void enviar_memfree_a_memoria(t_pcb* pcb, t_buffer* buffer) {
         uint32_t response = stream_recv_op_code(memSocket);
         stream_recv_empty_buffer(memSocket);
 
-        if (response == OK_CONTINUE) {
+        if (OK_CONTINUE == response) {
             stream_send_empty_buffer(OK_CONTINUE, *pcb_get_socket(pcb));
             log_info(kernelLogger, "MEM_FREE <Carpincho %d>: Memoria->Carpincho exitosa", pcb_get_pid(pcb));
         } else {
@@ -162,7 +162,7 @@ void enviar_mate_close_a_memoria(t_pcb* pcb) {
 
         uint32_t response = stream_recv_op_code(memSocket);
 
-        if (response == OK_CONTINUE) {
+        if (OK_CONTINUE == response) {
             stream_recv_empty_buffer(memSocket);
         } else {
             log_error(kernelLogger, "EXIT: Error al intentar finalizar Carpincho ID %d de Memoria", pcb_get_pid(pcb));
@@ -184,7 +184,7 @@ void enviar_suspension_de_carpincho_a_memoria(t_pcb* pcb) {
 
         uint32_t response = stream_recv_op_code(memSocket);
 
-        if (response == OK_CONTINUE) {
+        if (OK_CONTINUE == response) {
             stream_recv_empty_buffer(memSocket);
         } else {
             log_error(kernelLogger, "Suspensión: Error al intentar suspender un Carpincho ID %d de Memoria", pcb_get_pid(pcb));

@@ -81,11 +81,11 @@ static void __pcb_sjf_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempoI
 }
 
 bool pcb_status_is_blocked(t_pcb *self) {
-    return self->status == BLOCKED;
+    return BLOCKED == self->status;
 }
 
 bool pcb_status_is_susblocked(t_pcb *self) {
-    return self->status == SUSBLOCKED;
+    return SUSBLOCKED == self->status;
 }
 
 bool pcb_is_hrrn(void) {

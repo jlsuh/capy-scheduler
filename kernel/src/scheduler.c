@@ -219,7 +219,7 @@ void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
     uint32_t opCodeTarea = stream_recv_op_code(*socket);
     stream_recv_empty_buffer(*socket);
 
-    if (opCodeTarea == MATE_INIT) {
+    if (MATE_INIT == opCodeTarea) {
         t_buffer* buffer = buffer_create();
         uint32_t siguientePid = __get_next_pid();
         __pid_inc(&nextPid);
@@ -390,7 +390,7 @@ void liberar_una_instancia_del_semaforo(t_pcb* pcb, t_recurso_sem* sem) {
         valorActual = (int32_t*)dictionary_get(dict, nombre);
         (*valorActual)--;
         dictionary_put(dict, nombre, valorActual);
-        if (*valorActual == 0) {
+        if (0 == *valorActual) {
             valorActual = dictionary_remove(dict, nombre);
             free(valorActual);
         }
@@ -478,7 +478,7 @@ static bool __realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb)
             sem = list_find2(listaSemsSist, (void*)es_este_semaforo, tarea_sem_get_nombre(unaTareaSem));
             pthread_mutex_unlock(mutexSemsSist);
 
-            if (sem == NULL) {
+            if (NULL == sem) {
                 __kernel_sem_init(unaTareaSem, pcb);
                 log_info(kernelLogger, "SEM_INIT <Carpincho %d>: Inicialización semáforo \"%s\" con valor inicial %d", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem), tarea_sem_get_valor_inicial(unaTareaSem));
             } else {
@@ -599,7 +599,7 @@ static void __atender_peticiones_del_carpincho(t_pcb* pcb) {
 
         uint32_t opCodeTarea = stream_recv_op_code(socket);
 
-        if (opCodeTarea == MATE_CLOSE) {
+        if (MATE_CLOSE == opCodeTarea) {
             stream_recv_empty_buffer(socket);
             __dequeue_pcb(pcb, pcbsExec);
             pcb_transition_to_exit(pcb);
