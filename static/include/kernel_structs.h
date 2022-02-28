@@ -40,9 +40,4 @@ typedef struct {
     void *mensaje;
 } t_tarea_call_io;
 
-typedef struct {
-    t_tarea tipoTarea;
-    void *contenidoTarea;
-} t_peticion;
-
 #endif
