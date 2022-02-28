@@ -83,7 +83,7 @@ static void pasar_de_blocked_a_ready(t_pcb* pcb) {
     sem_post(cola_planificacion_get_instancias_disponibles(pcbsReady));
 }
 
-static void inicializar_dispositivos_io_config(t_cola_recursos* dispositivosIODelSistema) {
+static void inicializar_dispositivos_io(t_cola_recursos* dispositivosIODelSistema) {
     uint32_t duracionDispositivo;
     t_recurso_io* recursoIO;
     char** duracionesIO = kernel_config_get_duracionesIO(kernelCfg);
@@ -91,7 +91,7 @@ static void inicializar_dispositivos_io_config(t_cola_recursos* dispositivosIODe
     for (int i = 0; i < string_array_size(duracionesIO); i++) {
         duracionDispositivo = atoi(duracionesIO[i]);
         recursoIO = recurso_io_create(dispositivosIO[i], duracionDispositivo);
-        list_add(dispositivosIODelSistema->listaRecursos, recursoIO);
+        list_add(cola_recursos_get_list(dispositivosIODelSistema), recursoIO);
         log_info(kernelLogger, "Kernel: Inicialización de recurso %s con duración de I/O de %d milisegundos", recurso_io_get_nombre(recursoIO), recurso_io_get_duracion(recursoIO));
     }
 }
@@ -143,7 +143,7 @@ static void iniciar_dispositivo_io(t_recurso_io* recursoIO) {
 }
 
 static void iniciar_ejecucion_lista_dispositivos_io(void) {
-    list_iterate(dispositivosIODelSistema->listaRecursos, (void*)iniciar_dispositivo_io);
+    list_iterate(cola_recursos_get_list(dispositivosIODelSistema), (void*)iniciar_dispositivo_io);
 }
 
 static t_pcb* get_and_remove_first_pcb_from_queue(t_cola_planificacion* cola) {
@@ -318,9 +318,10 @@ static t_tarea_call_io* buffer_unpack_tarea_call_io(t_buffer* buffer) {
 
 static void kernel_sem_init(t_tarea_sem* unaTareaDeSem, t_pcb* pcb) {
     t_recurso_sem* recursoSem = recurso_sem_create(unaTareaDeSem->nombre, unaTareaDeSem->valor);
-    pthread_mutex_lock(&(semaforosDelSistema->mutexRecursos));
-    list_add(semaforosDelSistema->listaRecursos, recursoSem);
-    pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
+    pthread_mutex_t* mutex = cola_recursos_get_mutex(semaforosDelSistema);
+    pthread_mutex_lock(mutex);
+    list_add(cola_recursos_get_list(semaforosDelSistema), recursoSem);
+    pthread_mutex_unlock(mutex);
 }
 
 static void tarea_sem_destroy(t_tarea_sem* unaTareaSem) {
@@ -339,7 +340,7 @@ static bool es_este_dispositivo_io(t_recurso_io* recursoIO, t_tarea_call_io* cal
 }
 
 static void encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* callIO) {
-    t_recurso_io* recursoIO = list_find2(dispositivosIODelSistema->listaRecursos, (void*)es_este_dispositivo_io, callIO);
+    t_recurso_io* recursoIO = list_find2(cola_recursos_get_list(dispositivosIODelSistema), (void*)es_este_dispositivo_io, callIO);
 
     if (recursoIO != NULL) {
         char* nombreDispositivo = string_from_format("Dispositivo I/O <%s>", recurso_io_get_nombre(recursoIO));
@@ -382,12 +383,15 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
     bool esBloqueante = false;
     int index = -1;
 
+    pthread_mutex_t* mutexSemsSist = cola_recursos_get_mutex(semaforosDelSistema);
+    t_list* listaSemsSist = cola_recursos_get_list(semaforosDelSistema);
+
     switch (opCodeTarea) {
         case SEM_INIT:
             unaTareaSem = buffer_unpack_tarea_sem_init(buffer);
-            pthread_mutex_lock(&(semaforosDelSistema->mutexRecursos));
-            sem = list_find2(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, unaTareaSem->nombre);
-            pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
+            pthread_mutex_lock(mutexSemsSist);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            pthread_mutex_unlock(mutexSemsSist);
 
             if (sem == NULL) {
                 kernel_sem_init(unaTareaSem, pcb);
@@ -401,9 +405,9 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             return false;
         case SEM_WAIT:
             unaTareaSem = buffer_unpack_tarea_sem(buffer);
-            pthread_mutex_lock(&(semaforosDelSistema->mutexRecursos));
-            sem = list_find2(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, unaTareaSem->nombre);
-            pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
+            pthread_mutex_lock(mutexSemsSist);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            pthread_mutex_unlock(mutexSemsSist);
 
             if (sem != NULL) {
                 log_info(kernelLogger, "SEM_WAIT <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_valor_actual(sem));
@@ -423,9 +427,9 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             return esBloqueante;
         case SEM_POST:
             unaTareaSem = buffer_unpack_tarea_sem(buffer);
-            pthread_mutex_lock(&(semaforosDelSistema->mutexRecursos));
-            sem = list_find2(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, unaTareaSem->nombre);
-            pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
+            pthread_mutex_lock(mutexSemsSist);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            pthread_mutex_unlock(mutexSemsSist);
 
             if (sem != NULL) {
                 log_info(kernelLogger, "SEM_POST <Carpincho %d>: Valor semáforo: %d", pcb_get_pid(pcb), recurso_sem_get_valor_actual(sem));
@@ -448,16 +452,16 @@ static bool realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb) {
             return false;
         case SEM_DESTROY:
             unaTareaSem = buffer_unpack_tarea_sem(buffer);
-            pthread_mutex_lock(&(semaforosDelSistema->mutexRecursos));
-            sem = list_find2(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, unaTareaSem->nombre);
-            pthread_mutex_unlock(&(semaforosDelSistema->mutexRecursos));
+            pthread_mutex_lock(mutexSemsSist);
+            sem = list_find2(listaSemsSist, (void*)es_este_semaforo, unaTareaSem->nombre);
+            pthread_mutex_unlock(mutexSemsSist);
 
             if (sem != NULL) {
                 char* nombre = recurso_sem_get_nombre(sem);
                 t_queue* colaBloqueados = recurso_sem_get_cola_pcbs(sem);
                 if (queue_size(colaBloqueados) == 0) {
-                    index = list_get_index(semaforosDelSistema->listaRecursos, (void*)es_este_semaforo, (void*)nombre);
-                    list_remove(semaforosDelSistema->listaRecursos, index);
+                    index = list_get_index(listaSemsSist, (void*)es_este_semaforo, (void*)nombre);
+                    list_remove(listaSemsSist, index);
                     log_info(kernelLogger, "SEM_DESTROY <Carpincho %d>: Se elimina el semáforo \"%s\" con valor %d", pcb_get_pid(pcb), nombre, recurso_sem_get_valor_actual(sem));
                     recurso_sem_destroy(sem);
                 } else {
@@ -582,7 +586,7 @@ void iniciar_planificacion(void) {
     dispositivosIODelSistema = cola_recursos_create();
 
     /* Inicialización de dispositivos en TAD t_cola_recursos */
-    inicializar_dispositivos_io_config(dispositivosIODelSistema);
+    inicializar_dispositivos_io(dispositivosIODelSistema);
 
     /* Inicialización de colas de planificación */
     pcbsNew = cola_planificacion_create(0);
@@ -688,13 +692,6 @@ t_pcb* elegir_en_base_a_hrrn(t_cola_planificacion* colaPlanificacion) {
     }
     pthread_mutex_unlock(mutex);
     return pcbConMayorRR;
-}
-
-t_cola_recursos* cola_recursos_create(void) {
-    t_cola_recursos* colaRecursos = malloc(sizeof(*colaRecursos));
-    colaRecursos->listaRecursos = list_create();
-    pthread_mutex_init(&(colaRecursos->mutexRecursos), NULL);
-    return colaRecursos;
 }
 
 static void encolar_pcb_al_semaforo(t_pcb* pcb, t_recurso_sem* sem) {

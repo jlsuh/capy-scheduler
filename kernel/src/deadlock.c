@@ -184,7 +184,7 @@ void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_co
     list_add_all(pcbsEnDeadlock, pcbsDeadlockSusBlocked);
     if (!list_is_empty(pcbsEnDeadlock)) {
         t_list* semsEnDeadlock = list_create();
-        list_add_all(semsEnDeadlock, semaforosDelSistema->listaRecursos);
+        list_add_all(semsEnDeadlock, cola_recursos_get_list(semaforosDelSistema));
         bool existeDeadlock = true;
         while (existeDeadlock) {
             __deadlock_reducir_matrices_de_deteccion(pcbsEnDeadlock, semsEnDeadlock);
@@ -193,7 +193,7 @@ void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_co
                 __deadlock_recuperarse_del_deadlock(
                     pcbsEnDeadlock,
                     semsEnDeadlock,
-                    semaforosDelSistema->listaRecursos,
+                    cola_recursos_get_list(semaforosDelSistema),
                     cola_planificacion_get_list(pcbsBlocked),
                     cola_planificacion_get_list(pcbsSusBlocked),
                     gradoMultiprog);
@@ -207,7 +207,7 @@ void detectar_y_recuperarse_del_deadlock(t_cola_planificacion* pcbsBlocked, t_co
                 list_add_all(pcbsEnDeadlock, pcbsDeadlockBlocked);
                 list_add_all(pcbsEnDeadlock, pcbsDeadlockSusBlocked);
                 semsEnDeadlock = list_create();
-                list_add_all(semsEnDeadlock, semaforosDelSistema->listaRecursos);
+                list_add_all(semsEnDeadlock, cola_recursos_get_list(semaforosDelSistema));
                 existeDeadlock = __deadlock_matrices_son_nulas(pcbsEnDeadlock, semsEnDeadlock);
             }
         }

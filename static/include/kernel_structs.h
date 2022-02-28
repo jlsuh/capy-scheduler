@@ -45,9 +45,4 @@ typedef struct {
     void *contenidoTarea;
 } t_peticion;
 
-typedef struct {
-    t_list *listaRecursos;
-    pthread_mutex_t mutexRecursos;
-} t_cola_recursos;
-
 #endif

@@ -1,6 +1,7 @@
 #ifndef SCHEDULER_H_INCLUDED
 #define SCHEDULER_H_INCLUDED
 
+#include "cola_recursos.h"
 #include "kernel_config.h"
 #include "kernel_structs.h"
 #include "pcb.h"

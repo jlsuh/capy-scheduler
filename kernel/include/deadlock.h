@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "cola_planificacion.h"
+#include "cola_recursos.h"
 #include "kernel_structs.h"
 #include "recurso_sem.h"
 
