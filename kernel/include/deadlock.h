@@ -4,10 +4,10 @@
 #include <commons/collections/dictionary.h>
 #include <stdbool.h>
 
-#include "cola_planificacion.h"
-#include "cola_recursos.h"
 #include "common_flags.h"
-#include "recurso_sem.h"
+#include "domain/cola_planificacion.h"
+#include "domain/cola_recursos.h"
+#include "domain/recurso_sem.h"
 
 typedef struct t_deadlock t_deadlock;
 

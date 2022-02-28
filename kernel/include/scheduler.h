@@ -1,10 +1,10 @@
 #ifndef SCHEDULER_H_INCLUDED
 #define SCHEDULER_H_INCLUDED
 
-#include "cola_recursos.h"
 #include "common_flags.h"
+#include "domain/cola_recursos.h"
+#include "domain/pcb.h"
 #include "kernel_config.h"
-#include "pcb.h"
 
 bool kernel_sem_wait(t_recurso_sem *sem, t_pcb *pcbWait);
 t_cola_recursos *cola_recursos_create(void);

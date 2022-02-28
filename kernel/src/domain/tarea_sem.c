@@ -1,4 +1,4 @@
-#include "tarea_sem.h"
+#include "domain/tarea_sem.h"
 
 #include <stdint.h>
 #include <stdlib.h>

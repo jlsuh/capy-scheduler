@@ -1,4 +1,4 @@
-#include "recurso_sem.h"
+#include "domain/recurso_sem.h"
 
 #include <commons/collections/queue.h>
 #include <commons/string.h>

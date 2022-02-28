@@ -1,4 +1,4 @@
-#include "cola_planificacion.h"
+#include "domain/cola_planificacion.h"
 
 #include <stdlib.h>
 

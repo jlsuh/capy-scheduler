@@ -1,4 +1,4 @@
-#include "pcb.h"
+#include "domain/pcb.h"
 
 #include <commons/collections/dictionary.h>
 #include <stdint.h>
@@ -6,9 +6,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "hrrn.h"
+#include "algorithms/hrrn.h"
+#include "algorithms/sjf.h"
 #include "kernel_config.h"
-#include "sjf.h"
 
 struct t_pcb {
     uint32_t *socket;

@@ -11,11 +11,11 @@
 #include "buffer.h"
 #include "common_utils.h"
 #include "deadlock.h"
+#include "domain/recurso_io.h"
+#include "domain/tarea_call_io.h"
+#include "domain/tarea_sem.h"
 #include "mem_adapter.h"
-#include "recurso_io.h"
 #include "stream.h"
-#include "tarea_call_io.h"
-#include "tarea_sem.h"
 
 extern t_log* kernelLogger;
 extern t_kernel_config* kernelCfg;

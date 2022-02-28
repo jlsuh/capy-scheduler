@@ -1,4 +1,4 @@
-#include "sjf.h"
+#include "algorithms/sjf.h"
 
 #include <stdlib.h>
 

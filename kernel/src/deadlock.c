@@ -7,7 +7,6 @@
 #include <string.h>
 
 #include "common_utils.h"
-#include "recurso_sem.h"
 #include "scheduler.h"
 #include "stream.h"
 
