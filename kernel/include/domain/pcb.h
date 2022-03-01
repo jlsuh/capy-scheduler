@@ -6,6 +6,7 @@
 typedef struct t_pcb t_pcb;
 typedef enum t_status t_status;
 
+bool __es_este_pcb(void* pcbVoid, void* pidVoid);
 bool pcb_espera_algun_semaforo(void* pcbVoid);
 bool pcb_is_hrrn(void);
 bool pcb_is_sjf(void);

@@ -80,6 +80,12 @@ static void __pcb_sjf_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempoI
     sjf_set_est_actual(self->sjf, newEstActual);
 }
 
+bool __es_este_pcb(void *pcbVoid, void *pidVoid) {
+    t_pcb *pcb = (t_pcb *)pcbVoid;
+    uint32_t pid = *(uint32_t *)pidVoid;
+    return pcb_get_pid(pcb) == pid;
+}
+
 bool pcb_status_is_blocked(t_pcb *self) {
     return BLOCKED == self->status;
 }

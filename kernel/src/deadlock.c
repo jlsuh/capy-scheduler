@@ -51,12 +51,6 @@ static bool __deadlock_matrices_son_nulas(t_list* pcbsEnDeadlock, t_list* semsEn
     return !list_is_empty(pcbsEnDeadlock) && !list_is_empty(semsEnDeadlock);
 }
 
-static bool __es_este_pcb(void* pcbVoid, void* pidVoid) {
-    t_pcb* pcb = (t_pcb*)pcbVoid;
-    uint32_t pid = *(uint32_t*)pidVoid;
-    return pcb_get_pid(pcb) == pid;
-}
-
 static bool __deadlock_eliminar_celdas_nulas_consecutivas(t_list* firstToIterateList, t_dimention_type firstToIterateType, t_list* pivotList) {
     /* Eliminar:
     - Procesos que no poseen retención o espera

@@ -4,10 +4,8 @@
 #include <commons/collections/list.h>
 #include <stdbool.h>
 
-#include "kernel_structs.h"
-
 bool __deadlock_eliminar_pcb_de_lista(t_pcb *pcb, t_list *lista);
-bool __es_este_pcb(void *pcbVoid, void *pidVoid);
+bool es_este_pcb(void *pcbVoid, void *pidVoid);
 bool kernel_sem_wait(t_recurso_sem *sem, t_pcb *pcbWait);
 double get_diferencial_de_tiempo(clock_t tiempoFinal, clock_t tiempoInicial);
 double __media_exponencial(double realAnterior, double estAnterior);
