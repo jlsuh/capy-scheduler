@@ -10,7 +10,7 @@ char *kernel_config_get_mem_ip(t_kernel_config *);
 char *kernel_config_get_mem_port(t_kernel_config *);
 char **kernel_config_get_dispositivosIO(t_kernel_config *);
 char **kernel_config_get_duracionesIO(t_kernel_config *);
-char const *kernel_config_get_algoritmo_planificacion(t_kernel_config *);
+char *kernel_config_get_algoritmo_planificacion(t_kernel_config *);
 double kernel_config_get_alfa(t_kernel_config *);
 double kernel_config_get_est_inicial(t_kernel_config *);
 int32_t kernel_config_get_mem_socket(t_kernel_config *);

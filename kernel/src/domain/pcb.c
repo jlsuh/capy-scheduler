@@ -5,7 +5,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "algorithms/hrrn.h"
 #include "algorithms/sjf.h"
 #include "kernel_config.h"
 
@@ -37,7 +36,8 @@ static void __pcb_hrrn_create(t_pcb *self) {
     self->hrrn = hrrn_create();
     double serviceTime = kernel_config_get_est_inicial(kernelCfg);
     hrrn_set_service_time(self->hrrn, serviceTime);
-    hrrn_set_waiting_time(self->hrrn);
+    time_t curr;
+    hrrn_set_waiting_time(self->hrrn, time(&curr));
 }
 
 static void __pcb_sjf_create(t_pcb *self) {
@@ -71,7 +71,8 @@ static void __pcb_hrrn_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempo
     double realAnterior = __time_differential(tiempoFinal, tiempoInicial);
     double newServiceTime = __media_exponencial(realAnterior, hrrn_get_service_time(self->hrrn));
     hrrn_set_service_time(self->hrrn, newServiceTime);
-    hrrn_set_waiting_time(self->hrrn);
+    time_t curr;
+    hrrn_set_waiting_time(self->hrrn, time(&curr));
 }
 
 static void __pcb_sjf_est_update(t_pcb *self, time_t tiempoFinal, time_t tiempoInicial) {
@@ -94,26 +95,26 @@ bool pcb_status_is_susblocked(t_pcb *self) {
     return SUSBLOCKED == self->status;
 }
 
-bool pcb_is_hrrn(void) {
-    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "HRRN") == 0;
+bool pcb_is_hrrn(char *algorithm) {
+    return strcmp(algorithm, "HRRN") == 0;
 }
 
-bool pcb_is_sjf(void) {
-    return strcmp(kernel_config_get_algoritmo_planificacion(kernelCfg), "SJF") == 0;
+bool pcb_is_sjf(char *algorithm) {
+    return strcmp(algorithm, "SJF") == 0;
 }
 
-t_pcb *pcb_create(uint32_t *socket, uint32_t pid) {
+t_pcb *pcb_create(uint32_t *socket, uint32_t pid, char *algorithm) {
     t_pcb *self = malloc(sizeof(*self));
     self->socket = socket;
     self->pid = pid;
     self->status = NEW;
     self->sjf = NULL;
     self->hrrn = NULL;
-    if (pcb_is_sjf()) {
+    if (pcb_is_sjf(algorithm)) {
         self->algoritmo_init = __pcb_sjf_create;
         self->algoritmo_destroy = __pcb_sjf_destroy;
         self->algoritmo_update_next_est_info = __pcb_sjf_est_update;
-    } else if (pcb_is_hrrn()) {
+    } else if (pcb_is_hrrn(algorithm)) {
         self->algoritmo_init = __pcb_hrrn_create;
         self->algoritmo_destroy = __pcb_hrrn_destroy;
         self->algoritmo_update_next_est_info = __pcb_hrrn_est_update;
@@ -187,8 +188,32 @@ t_deadlock *pcb_get_deadlock_info(t_pcb *self) {
     return self->deadlockInfo;
 }
 
+double pcb_get_est_actual(t_pcb *self) {
+    return sjf_get_est_actual(self->sjf);
+}
+
+double pcb_get_service_time(t_pcb *self) {
+    return hrrn_get_service_time(self->hrrn);
+}
+
+time_t pcb_get_waiting_time(t_pcb *self) {
+    return hrrn_get_waiting_time(self->hrrn);
+}
+
+t_hrrn *pcb_get_hrnn(t_pcb *self) {
+    return self->hrrn;
+}
+
 void pcb_set_status(t_pcb *self, t_status newStatus) {
     self->status = newStatus;
+}
+
+void pcb_set_service_time(t_pcb *self, double serviceTime) {
+    hrrn_set_service_time(self->hrrn, serviceTime);
+}
+
+void pcb_set_waiting_time(t_pcb *self, time_t waitingTime) {
+    hrrn_set_waiting_time(self->hrrn, waitingTime);
 }
 
 void pcb_algoritmo_destroy(t_pcb *self) {

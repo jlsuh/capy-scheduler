@@ -8,15 +8,15 @@ EXCLUDE=kernel.c
 LIBS=cunit utils commons pthread
 
 # Custom libraries' paths
-SHARED_LIBPATHS=../utils
-STATIC_LIBPATHS=
+SHARED_LIBPATHS=
+STATIC_LIBPATHS=../utils
 
 # Compiler flags
 CDEBUG=-g -Wall -DDEBUG
 CRELEASE=-O3 -Wall -DNDEBUG
 
 # Arguments when executing with start, memcheck or helgrind
-ARGS=
+ARGS=../kernel/cfg/kernel_config.cfg
 
 # Valgrind flags
 MEMCHECK_FLAGS=--track-origins=yes --log-file="memcheck.log"

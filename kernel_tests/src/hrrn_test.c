@@ -1,14 +1,15 @@
 #include "hrrn_test.h"
 
 #include <CUnit/Basic.h>
+#include <commons/collections/list.h>
+#include <stdint.h>
 #include <stdlib.h>
 
-#include "duplicated_logic_allocator.h"
-#include "kernel_structs.h"
+#include "domain/cola_planificacion.h"
+#include "domain/pcb.h"
+#include "scheduler.h"
 
-extern double ESTIMACION_INICIAL;
-extern double ALFA;
-static t_list* pcbsReady;
+static t_cola_planificacion* pcbsReady;
 static t_pcb* carpincho1;
 static t_pcb* carpincho2;
 static t_pcb* carpincho3;
@@ -19,12 +20,10 @@ static uint32_t* ID2;
 static uint32_t* ID3;
 static uint32_t* ID4;
 static uint32_t* ID5;
+static char* ALGORITHM = "HRRN";
 
 // @Before
 void test_hrrn_setup(void) {
-    ESTIMACION_INICIAL = 3;
-    ALFA = 0.5;
-
     ID1 = malloc(sizeof(*ID1));
     ID2 = malloc(sizeof(*ID2));
     ID3 = malloc(sizeof(*ID3));
@@ -37,86 +36,22 @@ void test_hrrn_setup(void) {
     *ID4 = 4;
     *ID5 = 5;
 
-    pcbsReady = list_create();
-    carpincho1 = pcb_create(ID1, "HRRN");
-    carpincho2 = pcb_create(ID2, "HRRN");
-    carpincho3 = pcb_create(ID3, "HRRN");
-    carpincho4 = pcb_create(ID4, "HRRN");
-    carpincho5 = pcb_create(ID5, "HRRN");
+    pcbsReady = cola_planificacion_create(0);
+    carpincho1 = pcb_create(ID1, *ID1, ALGORITHM);
+    carpincho2 = pcb_create(ID2, *ID2, ALGORITHM);
+    carpincho3 = pcb_create(ID3, *ID3, ALGORITHM);
+    carpincho4 = pcb_create(ID4, *ID4, ALGORITHM);
+    carpincho5 = pcb_create(ID5, *ID5, ALGORITHM);
 }
 
 // @After
 void test_hrrn_tear_down(void) {
-    carpincho1->algoritmo_destroy(carpincho1);
-    carpincho2->algoritmo_destroy(carpincho2);
-    carpincho3->algoritmo_destroy(carpincho3);
-    carpincho4->algoritmo_destroy(carpincho4);
-    carpincho5->algoritmo_destroy(carpincho5);
-    list_destroy(pcbsReady);
-}
-
-void test_el_pcb_de_mayor_RR_es_quien_se_inicializa_primero_1(void) {
-    carpincho3->algoritmo_init(carpincho3);
-    carpincho2->algoritmo_init(carpincho2);
-    carpincho1->algoritmo_init(carpincho1);
-    carpincho5->algoritmo_init(carpincho5);
-    carpincho4->algoritmo_init(carpincho4);
-
-    list_add(pcbsReady, carpincho1);
-    list_add(pcbsReady, carpincho2);
-    list_add(pcbsReady, carpincho3);
-    list_add(pcbsReady, carpincho4);
-    list_add(pcbsReady, carpincho5);
-
-    t_pcb* pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
-
-    CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho3->socket);
-}
-
-void test_el_pcb_de_mayor_RR_es_quien_se_inicializa_primero_2(void) {
-    carpincho5->algoritmo_init(carpincho5);
-    carpincho2->algoritmo_init(carpincho2);
-    carpincho4->algoritmo_init(carpincho4);
-    carpincho3->algoritmo_init(carpincho3);
-    carpincho1->algoritmo_init(carpincho1);
-
-    list_add(pcbsReady, carpincho1);
-    list_add(pcbsReady, carpincho2);
-    list_add(pcbsReady, carpincho3);
-    list_add(pcbsReady, carpincho4);
-    list_add(pcbsReady, carpincho5);
-
-    t_pcb* pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
-
-    CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho5->socket);
-}
-
-void test_es_posible_elegir_el_siguiente_a_ejecutar_con_hrrn(void) {
-    carpincho5->algoritmo_init(carpincho5);
-    carpincho4->algoritmo_init(carpincho4);
-    carpincho1->algoritmo_init(carpincho1);
-    carpincho3->algoritmo_init(carpincho3);
-    carpincho2->algoritmo_init(carpincho2);
-
-    list_add(pcbsReady, carpincho1);
-    list_add(pcbsReady, carpincho2);
-    list_add(pcbsReady, carpincho3);
-    list_add(pcbsReady, carpincho4);
-    list_add(pcbsReady, carpincho5);
-
-    t_pcb* pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
-
-    CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho5->socket);
-    CU_ASSERT_EQUAL(pcbDeMayorRR->hrrn->s, /*s = 0.5 * 0 + 0.5 * 3 =*/1.50000 /*= 1.5UT*/);
-
-    // Suponiendo que ejecuta 2UT
-    carpincho5->algoritmo_update_next_est_info(carpincho5, /*Real anterior =*/2000000 /*= 2UT*/, 0);
-    CU_ASSERT_EQUAL(carpincho5->hrrn->s, /* s = 0.5 * 2 + 0.5 * 1.5 =*/1.75000);
-
-    pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
-
-    CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho4->socket);
-    CU_ASSERT_EQUAL(carpincho4->hrrn->s, 1.50000);
+    pcb_algoritmo_destroy(carpincho1);
+    pcb_algoritmo_destroy(carpincho2);
+    pcb_algoritmo_destroy(carpincho3);
+    pcb_algoritmo_destroy(carpincho4);
+    pcb_algoritmo_destroy(carpincho5);
+    cola_planificacion_destroy(pcbsReady);
 }
 
 void test_se_elige_al_carpincho_de_menor_service_time_en_caso_de_empatar_por_waiting_time(void) {
@@ -125,35 +60,36 @@ void test_se_elige_al_carpincho_de_menor_service_time_en_caso_de_empatar_por_wai
     */
     clock_t now = clock();
 
-    carpincho1->algoritmo_init(carpincho1);
-    carpincho2->algoritmo_init(carpincho2);
-    carpincho3->algoritmo_init(carpincho3);
-    carpincho4->algoritmo_init(carpincho4);
-    carpincho5->algoritmo_init(carpincho5);
+    pcb_algoritmo_init(carpincho1);
+    pcb_algoritmo_init(carpincho2);
+    pcb_algoritmo_init(carpincho3);
+    pcb_algoritmo_init(carpincho4);
+    pcb_algoritmo_init(carpincho5);
 
-    carpincho1->hrrn->w = now;
-    carpincho2->hrrn->w = now;
-    carpincho3->hrrn->w = now;
-    carpincho4->hrrn->w = now;
-    carpincho5->hrrn->w = now;
+    pcb_set_waiting_time(carpincho1, now);
+    pcb_set_waiting_time(carpincho2, now);
+    pcb_set_waiting_time(carpincho3, now);
+    pcb_set_waiting_time(carpincho4, now);
+    pcb_set_waiting_time(carpincho5, now);
 
     double sameServiceTime = 1.000001;
 
-    carpincho1->hrrn->s = sameServiceTime;
-    carpincho2->hrrn->s = sameServiceTime;
-    carpincho3->hrrn->s = sameServiceTime;
-    carpincho4->hrrn->s = 1.000000;
-    carpincho5->hrrn->s = sameServiceTime;
+    pcb_set_service_time(carpincho1, sameServiceTime);
+    pcb_set_service_time(carpincho2, sameServiceTime);
+    pcb_set_service_time(carpincho3, sameServiceTime);
+    pcb_set_service_time(carpincho4, 1.000000);
+    pcb_set_service_time(carpincho5, sameServiceTime);
 
-    list_add(pcbsReady, carpincho3);
-    list_add(pcbsReady, carpincho2);
-    list_add(pcbsReady, carpincho1);
-    list_add(pcbsReady, carpincho5);
-    list_add(pcbsReady, carpincho4);
+    t_list* readyList = cola_planificacion_get_list(pcbsReady);
+    list_add(readyList, carpincho3);
+    list_add(readyList, carpincho2);
+    list_add(readyList, carpincho1);
+    list_add(readyList, carpincho5);
+    list_add(readyList, carpincho4);
 
     t_pcb* pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
 
-    CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho4->socket);
+    CU_ASSERT_EQUAL(*pcb_get_socket(pcbDeMayorRR), *pcb_get_socket(carpincho4));
 }
 
 void test_se_elige_al_carpincho_de_mayor_waiting_time_en_caso_de_empatar_por_service_time(void) {
@@ -162,67 +98,69 @@ void test_se_elige_al_carpincho_de_mayor_waiting_time_en_caso_de_empatar_por_ser
     */
     clock_t now = 1000000;
 
-    carpincho1->algoritmo_init(carpincho1);
-    carpincho2->algoritmo_init(carpincho2);
-    carpincho3->algoritmo_init(carpincho3);
-    carpincho4->algoritmo_init(carpincho4);
-    carpincho5->algoritmo_init(carpincho5);
+    pcb_algoritmo_init(carpincho1);
+    pcb_algoritmo_init(carpincho2);
+    pcb_algoritmo_init(carpincho3);
+    pcb_algoritmo_init(carpincho4);
+    pcb_algoritmo_init(carpincho5);
 
     double sameServiceTime = 1.000000;
 
-    carpincho1->hrrn->s = sameServiceTime;
-    carpincho2->hrrn->s = sameServiceTime;
-    carpincho3->hrrn->s = sameServiceTime;
-    carpincho4->hrrn->s = sameServiceTime;
-    carpincho5->hrrn->s = sameServiceTime;
+    pcb_set_service_time(carpincho1, sameServiceTime);
+    pcb_set_service_time(carpincho2, sameServiceTime);
+    pcb_set_service_time(carpincho3, sameServiceTime);
+    pcb_set_service_time(carpincho4, sameServiceTime);
+    pcb_set_service_time(carpincho5, sameServiceTime);
 
-    carpincho1->hrrn->w = now;
-    carpincho2->hrrn->w = 999999;
-    carpincho3->hrrn->w = now;
-    carpincho4->hrrn->w = now;
-    carpincho5->hrrn->w = now;
+    pcb_set_waiting_time(carpincho1, now);
+    pcb_set_waiting_time(carpincho2, 999999);
+    pcb_set_waiting_time(carpincho3, now);
+    pcb_set_waiting_time(carpincho4, now);
+    pcb_set_waiting_time(carpincho5, now);
 
-    list_add(pcbsReady, carpincho3);
-    list_add(pcbsReady, carpincho2);
-    list_add(pcbsReady, carpincho1);
-    list_add(pcbsReady, carpincho5);
-    list_add(pcbsReady, carpincho4);
+    t_list* readyList = cola_planificacion_get_list(pcbsReady);
+    list_add(readyList, carpincho3);
+    list_add(readyList, carpincho2);
+    list_add(readyList, carpincho1);
+    list_add(readyList, carpincho5);
+    list_add(readyList, carpincho4);
 
     t_pcb* pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
 
-    CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho2->socket);
+    CU_ASSERT_EQUAL(*pcb_get_socket(pcbDeMayorRR), *pcb_get_socket(carpincho2));
 }
 
 void test_en_caso_de_empate_por_waiting_y_service_time_se_elige_al_primero_de_la_cola(void) {
     clock_t now = 1000000;
 
-    carpincho1->algoritmo_init(carpincho1);
-    carpincho2->algoritmo_init(carpincho2);
-    carpincho3->algoritmo_init(carpincho3);
-    carpincho4->algoritmo_init(carpincho4);
-    carpincho5->algoritmo_init(carpincho5);
+    pcb_algoritmo_init(carpincho1);
+    pcb_algoritmo_init(carpincho2);
+    pcb_algoritmo_init(carpincho3);
+    pcb_algoritmo_init(carpincho4);
+    pcb_algoritmo_init(carpincho5);
 
     double sameServiceTime = 1.000000;
 
-    carpincho1->hrrn->s = sameServiceTime;
-    carpincho2->hrrn->s = sameServiceTime;
-    carpincho3->hrrn->s = sameServiceTime;
-    carpincho4->hrrn->s = sameServiceTime;
-    carpincho5->hrrn->s = sameServiceTime;
+    pcb_set_service_time(carpincho1, sameServiceTime);
+    pcb_set_service_time(carpincho2, sameServiceTime);
+    pcb_set_service_time(carpincho3, sameServiceTime);
+    pcb_set_service_time(carpincho4, sameServiceTime);
+    pcb_set_service_time(carpincho5, sameServiceTime);
 
-    carpincho1->hrrn->w = now;
-    carpincho2->hrrn->w = now;
-    carpincho3->hrrn->w = now;
-    carpincho4->hrrn->w = now;
-    carpincho5->hrrn->w = now;
+    pcb_set_waiting_time(carpincho1, now);
+    pcb_set_waiting_time(carpincho2, now);
+    pcb_set_waiting_time(carpincho3, now);
+    pcb_set_waiting_time(carpincho4, now);
+    pcb_set_waiting_time(carpincho5, now);
 
-    list_add(pcbsReady, carpincho2);
-    list_add(pcbsReady, carpincho5);
-    list_add(pcbsReady, carpincho3);
-    list_add(pcbsReady, carpincho1);
-    list_add(pcbsReady, carpincho4);
+    t_list* readyList = cola_planificacion_get_list(pcbsReady);
+    list_add(readyList, carpincho2);
+    list_add(readyList, carpincho5);
+    list_add(readyList, carpincho3);
+    list_add(readyList, carpincho1);
+    list_add(readyList, carpincho4);
 
     t_pcb* pcbDeMayorRR = elegir_en_base_a_hrrn(pcbsReady);
 
-    CU_ASSERT_EQUAL(pcbDeMayorRR->socket, carpincho2->socket);
+    CU_ASSERT_EQUAL(*pcb_get_socket(pcbDeMayorRR), *pcb_get_socket(carpincho2));
 }

@@ -26,6 +26,7 @@ void hrrn_set_service_time(t_hrrn* self, double serviceTime) {
     self->s = serviceTime;
 }
 
-void hrrn_set_waiting_time(t_hrrn* self) {
-    time(&(self->w));
+// time(&(self->w));
+void hrrn_set_waiting_time(t_hrrn* self, time_t waitingTime) {
+    self->w = waitingTime;
 }

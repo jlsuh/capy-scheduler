@@ -7,10 +7,11 @@
 #include <stdlib.h>
 
 #include "common_utils.h"
-#include "duplicated_logic_allocator.h"
+#include "domain/pcb.h"
 
 static t_list* lista;
 static char* string;
+static char* ALGORITHM = "SJF";
 
 // @Before
 void test_commons_setup(void) {
@@ -77,9 +78,9 @@ void test_list_get_index(void) {
     *pid3 = 3;
 
     t_list* list = list_create();
-    t_pcb* pcb1 = pcb_create(pid1, "SJF");
-    t_pcb* pcb2 = pcb_create(pid2, "SJF");
-    t_pcb* pcb3 = pcb_create(pid3, "SJF");
+    t_pcb* pcb1 = pcb_create(pid1, *pid1, ALGORITHM);
+    t_pcb* pcb2 = pcb_create(pid2, *pid2, ALGORITHM);
+    t_pcb* pcb3 = pcb_create(pid3, *pid3, ALGORITHM);
 
     list_add(list, pcb1);
     list_add(list, pcb3);
@@ -96,20 +97,4 @@ void test_list_get_index(void) {
     pcb_destroy(pcb1);
     pcb_destroy(pcb2);
     pcb_destroy(pcb3);
-}
-
-void test_eliminar_un_elemento_de_la_lista_de_una_queue(void) {
-    t_queue* queue = queue_create();
-    uint32_t* pid1 = malloc(sizeof(*pid1));
-    *pid1 = 1;
-    t_pcb* pcb1 = pcb_create(pid1, "SJF");
-
-    queue_push(queue, pcb1);
-
-    __deadlock_eliminar_pcb_de_lista(pcb1, queue->elements);
-
-    CU_ASSERT_TRUE(queue_is_empty(queue));
-
-    pcb_destroy(pcb1);
-    queue_destroy(queue);
 }

@@ -1,6 +1,6 @@
 PROJECTS=./kernel ./use-case-deadlock ./use-case-scheduling ./use-case-suspension
 LIBS=./utils ./matelib
-TESTS=
+TESTS=./kernel_tests
 
 all: $(PROJECTS)
 

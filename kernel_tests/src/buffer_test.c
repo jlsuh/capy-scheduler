@@ -41,7 +41,7 @@ void test_es_posible_empaquetar_cualquier_valor(void) {
 
     CU_ASSERT_EQUAL(buffer->size, /*uint8_t:*/ 1 + /*uint16_t:*/ 2 +
                                       /*uint32_t:*/ 4 + /*uint64_t:*/ 8 +
-                                      (/*uint32_t:*/ 4 + /*strlen+1:*/ 18));
+                                      (/*uint32_t:*/ 4 + /*strlen+1:*/ 11));
 }
 
 void test_es_posible_desempaquetar_cualquier_valor(void) {

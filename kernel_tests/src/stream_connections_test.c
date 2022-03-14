@@ -45,16 +45,16 @@ void test_es_posible_establecer_una_conexion(void) {
 }
 
 void test_es_posible_serializar_un_string_enviarlo_y_deserializarlo(void) {
-    t_buffer* buffer = buffer_create();
-    buffer_pack_string(buffer, testString);
+    t_buffer* senderBuffer = buffer_create();
+    buffer_pack_string(senderBuffer, testString);
+    stream_send_buffer(senderBuffer, 0, sockClienteDelServ);
+    buffer_destroy(senderBuffer);
 
-    void* streamAEnviar = __stream_create(STRING, buffer);
-
-    __stream_send(sockClienteDelServ, streamAEnviar, buffer->size);
-    buffer_destroy(buffer);
-    free(streamAEnviar);
-
-    char* recvdString = (char*)stream_deserialize(sockServDelCliente);
+    t_buffer* recvdBuffer = buffer_create();
+    stream_recv_op_code(sockServDelCliente);
+    stream_recv_buffer(sockServDelCliente, recvdBuffer);
+    char* recvdString = buffer_unpack_string(recvdBuffer);
+    buffer_destroy(recvdBuffer);
 
     CU_ASSERT_STRING_EQUAL(recvdString, testString);
 

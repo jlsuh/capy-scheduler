@@ -225,7 +225,7 @@ void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
         __pid_inc(&nextPid);
         buffer_pack(buffer, &siguientePid, sizeof(siguientePid));
         stream_send_buffer(buffer, OK_CONTINUE, *socket);
-        t_pcb* pcb = pcb_create(socket, siguientePid);
+        t_pcb* pcb = pcb_create(socket, siguientePid, kernel_config_get_algoritmo_planificacion(kernelCfg));
         __enqueue_pcb(pcb, pcbsNew);
         log_info(kernelLogger, "Kernel: Carpincho ID %d establece conexión", pcb_get_pid(pcb));
         log_info(kernelLogger, "Kernel: Creación PCB Carpincho ID %d exitosa", pcb_get_pid(pcb));
@@ -636,9 +636,9 @@ t_pcb* elegir_en_base_a_hrrn(t_cola_planificacion* colaPlanificacion) {
     time(&now);
     t_pcb* pcbConMayorRR = list_get(cola_planificacion_get_list(colaPlanificacion), 0);
     t_pcb* pcbTemp = NULL;
-    t_list* listaPCBsReady = cola_planificacion_get_list(pcbsReady);
-    for (int i = 1; i < list_size(listaPCBsReady); i++) {
-        pcbTemp = list_get(listaPCBsReady, i);
+    t_list* listaPCBs = cola_planificacion_get_list(colaPlanificacion);
+    for (int i = 1; i < list_size(listaPCBs); i++) {
+        pcbTemp = list_get(listaPCBs, i);
         double supuestoMayor = pcb_response_ratio(pcbConMayorRR, now);
         double tempRR = pcb_response_ratio(pcbTemp, now);
         if (tempRR > supuestoMayor) {
@@ -651,9 +651,10 @@ t_pcb* elegir_en_base_a_hrrn(t_cola_planificacion* colaPlanificacion) {
 
 static t_pcb* __elegir_pcb_segun_algoritmo(t_cola_planificacion* cola) {
     t_pcb* pcb = NULL;
-    if (pcb_is_sjf()) {
+    char* algorithm = kernel_config_get_algoritmo_planificacion(kernelCfg);
+    if (pcb_is_sjf(algorithm)) {
         pcb = elegir_en_base_a_sjf(cola);
-    } else if (pcb_is_hrrn()) {
+    } else if (pcb_is_hrrn(algorithm)) {
         pcb = elegir_en_base_a_hrrn(cola);
     }
     return pcb;

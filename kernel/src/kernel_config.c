@@ -59,7 +59,7 @@ char* kernel_config_get_mem_port(t_kernel_config* self) {
     return self->PUERTO_MEMORIA;
 }
 
-char const* kernel_config_get_algoritmo_planificacion(t_kernel_config* self) {
+char* kernel_config_get_algoritmo_planificacion(t_kernel_config* self) {
     return self->ALGORITMO_PLANIFICACION;
 }
 

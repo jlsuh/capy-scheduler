@@ -1,6 +1,3 @@
-# Libraries
-LIBS=commons
-
 # Custom libraries' paths
 LIBPATHS=
 

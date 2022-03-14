@@ -18,6 +18,15 @@ t_cola_planificacion* cola_planificacion_create(int semInitVal) {
     return self;
 }
 
+void cola_planificacion_destroy(t_cola_planificacion* self) {
+    list_destroy(self->lista);
+    pthread_mutex_destroy(self->mutex);
+    sem_destroy(self->instanciasDisponibles);
+    free(self->mutex);
+    free(self->instanciasDisponibles);
+    free(self);
+}
+
 t_list* cola_planificacion_get_list(t_cola_planificacion* self) {
     return self->lista;
 }

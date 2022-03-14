@@ -1,15 +1,18 @@
 #include <CUnit/Basic.h>
 #include <commons/config.h>
+#include <commons/log.h>
 #include <stdlib.h>
 
 #include "buffer_test.h"
 #include "commons_test.h"
-#include "deadlock_test.h"
 #include "hrrn_test.h"
+#include "kernel_config.h"
 #include "sjf_test.h"
 #include "stream_connections_test.h"
 
 #define TESTS_CONFIG_PATH "cfg/test_config.cfg"
+#define KERNEL_LOG_DEST "bin/kernel_tests.log"
+#define KERNEL_MODULE_NAME "Kernel Test"
 
 #define TEST_FUNC(func) \
     { "\e[1;92m" #func "\e[0m", func }
@@ -24,6 +27,8 @@ typedef struct {
 } t_test_case;
 
 t_config* testConfig;
+t_kernel_config* kernelCfg;
+t_log* kernelLogger;
 
 // Se ejecuta cada vez que inicia 1 CU_pSuite
 int test_suite_initialize(void) {
@@ -49,7 +54,6 @@ void commons_tests(void) {
         TEST_FUNC(test_es_posible_cambiar_de_string_en_un_instante_posterior),
         TEST_FUNC(test_list_get_index),
         TEST_FUNC(test_list_remove_retorna_nulo_en_caso_de_lista_vacia),
-        TEST_FUNC(test_eliminar_un_elemento_de_la_lista_de_una_queue),
     };
     ADD_TEST_CASES_TO_SUITE(commonsSuite, commonsTestCases);
 }
@@ -62,7 +66,6 @@ void kernel_tests(void) {
         test_sjf_setup,
         test_sjf_tear_down);
     t_test_case SJFTestCases[] = {
-        TEST_FUNC(test_es_posible_actualizar_info_para_siguiente_estimacion),
         TEST_FUNC(test_la_estimacion_actual_inicial_es_la_misma_para_todos),
         TEST_FUNC(test_se_elige_por_fifo_en_caso_de_empate_1),
         TEST_FUNC(test_se_elige_por_fifo_en_caso_de_empate_2),
@@ -76,38 +79,11 @@ void kernel_tests(void) {
         test_hrrn_setup,
         test_hrrn_tear_down);
     t_test_case HRRNTestCases[] = {
-        TEST_FUNC(test_el_pcb_de_mayor_RR_es_quien_se_inicializa_primero_1),
-        TEST_FUNC(test_el_pcb_de_mayor_RR_es_quien_se_inicializa_primero_2),
         TEST_FUNC(test_en_caso_de_empate_por_waiting_y_service_time_se_elige_al_primero_de_la_cola),
-        TEST_FUNC(test_es_posible_elegir_el_siguiente_a_ejecutar_con_hrrn),
         TEST_FUNC(test_se_elige_al_carpincho_de_mayor_waiting_time_en_caso_de_empatar_por_service_time),
         TEST_FUNC(test_se_elige_al_carpincho_de_menor_service_time_en_caso_de_empatar_por_waiting_time),
     };
     ADD_TEST_CASES_TO_SUITE(HRRNSuite, HRRNTestCases);
-
-    CU_pSuite deadlockSuite = CU_add_suite_with_setup_and_teardown(
-        "Deadlock Test Suite",
-        NULL,
-        NULL,
-        test_deadlock_setup,
-        test_deadlock_tear_down);
-    t_test_case deadlockTestCases[] = {
-        TEST_FUNC(test_deteccion_y_recuperacion_del_deadlock_1),
-        TEST_FUNC(test_deteccion_y_recuperacion_del_deadlock_2),
-        TEST_FUNC(test_es_posible_eliminar_columnas_y_filas_nulas_1),
-        TEST_FUNC(test_es_posible_eliminar_columnas_y_filas_nulas_2),
-        TEST_FUNC(test_es_posible_eliminar_columnas_y_filas_nulas_3),
-        TEST_FUNC(test_pcb_create),
-        TEST_FUNC(test_sem_create),
-        TEST_FUNC(test_un_proceso_al_hacer_un_post_de_un_semaforo_que_no_retenia_sigue_sin_retener_ninguna_instancia),
-        TEST_FUNC(test_un_proceso_al_hacer_un_post_deja_de_tener_una_intancia_que_retenia),
-        TEST_FUNC(test_un_proceso_no_retiene_una_instancia_del_semaforo_en_caso_de_bloquearse),
-        TEST_FUNC(test_un_proceso_retiene_dos_instancias_de_un_semaforo),
-        TEST_FUNC(test_un_proceso_retiene_una_instancia_de_un_semaforo_bloqueandose_luego_en_el_mismo),
-        TEST_FUNC(test_un_proceso_retiene_una_instancia_de_un_semaforo_pero_se_bloquea_en_otro_semaforo),
-        TEST_FUNC(test_un_proceso_retiene_una_instancia_del_semaforo_en_caso_de_no_bloquearse),
-    };
-    ADD_TEST_CASES_TO_SUITE(deadlockSuite, deadlockTestCases);
 }
 
 void static_lib_tests(void) {
@@ -142,12 +118,18 @@ int main(int argc, char* argv[]) {
     CU_initialize_registry();
     CU_basic_set_mode(CU_BRM_VERBOSE);
 
+    bool activeConsole = true;
+    kernelLogger = log_create(KERNEL_LOG_DEST, KERNEL_MODULE_NAME, activeConsole, LOG_LEVEL_INFO);
+    kernelCfg = kernel_config_create("../kernel/cfg/kernel_config.cfg");
+
     commons_tests();
     kernel_tests();
     static_lib_tests();
 
     CU_basic_run_tests();
     CU_cleanup_registry();
+
+    liberar_modulo_kernel(kernelLogger, kernelCfg);
 
     return CU_get_error();
 }
