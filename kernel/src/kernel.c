@@ -26,7 +26,7 @@ static void __crear_hilo_handler_conexion_entrante(int* socket);
 int main(int argc, char* argv[]) {
     bool activeConsole = true;
     kernelLogger = log_create(KERNEL_LOG_DEST, KERNEL_MODULE_NAME, activeConsole, LOG_LEVEL_INFO);
-    kernelCfg = kernel_config_create();
+    kernelCfg = kernel_config_create(argv[1]);
 
     int socketEscucha = iniciar_servidor(kernel_config_get_mem_ip(kernelCfg), kernel_config_get_mem_port(kernelCfg));
 

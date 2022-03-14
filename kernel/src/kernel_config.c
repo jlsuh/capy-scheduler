@@ -8,8 +8,6 @@
 
 #include "module_config.h"
 
-#define KERNEL_CONFIG_PATH "cfg/kernel_config.cfg"
-
 extern t_log* kernelLogger;
 extern t_kernel_config* kernelCfg;
 
@@ -43,9 +41,9 @@ static void __kernel_config_initializer(void* moduleConfig, t_config* tempCfg) {
     kernelConfig->MEMORIA_SOCKET = 0;
 }
 
-t_kernel_config* kernel_config_create(void) {
+t_kernel_config* kernel_config_create(char* kernelConfigPath) {
     t_kernel_config* self = malloc(sizeof(*self));
-    config_init(self, KERNEL_CONFIG_PATH, kernelLogger, __kernel_config_initializer);
+    config_init(self, kernelConfigPath, kernelLogger, __kernel_config_initializer);
     return self;
 }
 

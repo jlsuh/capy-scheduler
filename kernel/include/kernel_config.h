@@ -14,7 +14,7 @@ char const *kernel_config_get_algoritmo_planificacion(t_kernel_config *);
 double kernel_config_get_alfa(t_kernel_config *);
 double kernel_config_get_est_inicial(t_kernel_config *);
 int32_t kernel_config_get_mem_socket(t_kernel_config *);
-t_kernel_config *kernel_config_create(void);
+t_kernel_config *kernel_config_create(char *kernelConfigPath);
 uint16_t kernel_config_get_grado_multiproc(t_kernel_config *);
 uint16_t kernel_config_get_grado_multiprog(t_kernel_config *);
 uint16_t kernel_config_get_tiempo_deadlock(t_kernel_config *);
