@@ -1,26 +1,22 @@
-PROJECTS=kernel use-case-deadlock use-case-scheduling use-case-suspension
-LIBS=static matelib
+PROJECTS=./kernel ./use-case-deadlock ./use-case-scheduling ./use-case-suspension
+LIBS=./utils ./matelib
+TESTS=
 
 all: $(PROJECTS)
-	@echo "Proyectos compilados: \"$(PROJECTS)\""
-	@echo "Dependencias compiladas: \"$(LIBS)\""
 
 $(PROJECTS): $(LIBS)
-	$(MAKE) --no-print-directory -C $@ all
+	$(MAKE) -C $@
 
 $(LIBS):
-	$(MAKE) --no-print-directory -C $@ all
+	$(MAKE) -C $@
 
-clean: clean-vgcores clean-logs
-	$(foreach P, $(LIBS) $(PROJECTS), $(MAKE) --no-print-directory -C $P clean;)
+clean:
+	$(foreach PROJ, $(LIBS) $(PROJECTS) $(TESTS), $(MAKE) -C $(PROJ) clean;)
 
-clean-vgcores:
-	$(RM) **/vgcore.*
+release: test
+	$(foreach PROJ, $(LIBS) $(PROJECTS), $(MAKE) -C $(PROJ) release;)
 
-clean-logs:
-	$(RM) **/**/*.log
+test:
+	$(foreach PROJ, $(TESTS), $(MAKE) -C $(PROJ) start;)
 
-release:
-	$(foreach P, $(LIBS) $(PROJECTS), $(MAKE) --no-print-directory -C $P release;)
-
-.PHONY: all $(PROJECTS) $(LIBS) clean release clean-vgcores clean-logs
+.PHONY: all $(PROJECTS) $(LIBS) $(TESTS) clean release test
