@@ -22,22 +22,16 @@ static void* __stream_create(uint32_t opCode, t_buffer* buffer) {
     return streamToSend;
 }
 
-void stream_send_buffer(t_buffer* buffer, uint32_t opCodeTarea, int toSocket) {
+void stream_send_buffer(int toSocket, uint32_t opCodeTarea, t_buffer* buffer) {
     void* stream = __stream_create(opCodeTarea, buffer);
     __stream_send(toSocket, stream, buffer->size);
     free(stream);
 }
 
-void stream_send_empty_buffer(uint32_t opCode, int toSocket) {
+void stream_send_empty_buffer(int toSocket, uint32_t opCode) {
     t_buffer* emptyBuffer = buffer_create();
     stream_send_buffer(emptyBuffer, opCode, toSocket);
     buffer_destroy(emptyBuffer);
-}
-
-void stream_recv_empty_buffer(int fromSocket) {
-    t_buffer* buffer = buffer_create();
-    stream_recv_buffer(fromSocket, buffer);
-    buffer_destroy(buffer);
 }
 
 void stream_recv_buffer(int fromSocket, t_buffer* destBuffer) {
@@ -46,6 +40,12 @@ void stream_recv_buffer(int fromSocket, t_buffer* destBuffer) {
         destBuffer->stream = malloc(destBuffer->size);
         recv(fromSocket, destBuffer->stream, destBuffer->size, 0);
     }
+}
+
+void stream_recv_empty_buffer(int fromSocket) {
+    t_buffer* buffer = buffer_create();
+    stream_recv_buffer(fromSocket, buffer);
+    buffer_destroy(buffer);
 }
 
 uint32_t stream_recv_op_code(int fromSocket) {
