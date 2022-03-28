@@ -127,7 +127,7 @@ static void __deadlock_finalizar_carpincho_en_deadlock(t_pcb* pcb) {
         prevStatus = string_from_format("SUSP/BLOCKED");
     }
     log_info(kernelLogger, "Deadlock: Finalización abrupta del PCB ID %d por resolución de deadlocks", pcb_get_pid(pcb));
-    stream_send_empty_buffer(DEADLOCK_END, *pcb_get_socket(pcb));
+    stream_send_empty_buffer(*pcb_get_socket(pcb), DEADLOCK_END);
     log_transition("Deadlock", prevStatus, "EXIT", pcb_get_pid(pcb));
     pcb_algoritmo_destroy(pcb);
     free(prevStatus);

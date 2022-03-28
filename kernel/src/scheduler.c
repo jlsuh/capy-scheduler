@@ -179,7 +179,7 @@ static noreturn void* __liberar_carpinchos_en_exit(void* _) {
 
         enviar_mate_close_a_memoria(pcbALiberar);
 
-        stream_send_empty_buffer(OK_FINISH, *pcb_get_socket(pcbALiberar));
+        stream_send_empty_buffer(*pcb_get_socket(pcbALiberar), OK_FINISH);
         log_info(kernelLogger, "Kernel: Desconexión Carpincho ID %d", pcb_get_pid(pcbALiberar));
         pcb_algoritmo_destroy(pcbALiberar);
 
@@ -224,7 +224,7 @@ void* encolar_en_new_nuevo_carpincho_entrante(void* socketHilo) {
         uint32_t siguientePid = __get_next_pid();
         __pid_inc(&nextPid);
         buffer_pack(buffer, &siguientePid, sizeof(siguientePid));
-        stream_send_buffer(buffer, OK_CONTINUE, *socket);
+        stream_send_buffer(*socket, OK_CONTINUE, buffer);
         t_pcb* pcb = pcb_create(socket, siguientePid, kernel_config_get_algoritmo_planificacion(kernelCfg));
         __enqueue_pcb(pcb, pcbsNew);
         log_info(kernelLogger, "Kernel: Carpincho ID %d establece conexión", pcb_get_pid(pcb));
@@ -485,7 +485,7 @@ static bool __realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb)
                 log_error(kernelLogger, "SEM_INIT <Carpincho %d>: Intento de inicialización semáforo \"%s\" ya existente en sistema", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
-            stream_send_empty_buffer(OK_CONTINUE, socket);
+            stream_send_empty_buffer(socket, OK_CONTINUE);
             tarea_sem_destroy(unaTareaSem);
             return false;
         case SEM_WAIT:
@@ -507,7 +507,7 @@ static bool __realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb)
                 log_error(kernelLogger, "SEM_WAIT <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
-            stream_send_empty_buffer(OK_CONTINUE, socket);
+            stream_send_empty_buffer(socket, OK_CONTINUE);
             tarea_sem_destroy(unaTareaSem);
             return esBloqueante;
         case SEM_POST:
@@ -532,7 +532,7 @@ static bool __realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb)
                 log_error(kernelLogger, "SEM_POST <Carpincho %d>: Semáforo \"%s\" no encontrado", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
-            stream_send_empty_buffer(OK_CONTINUE, socket);
+            stream_send_empty_buffer(socket, OK_CONTINUE);
             tarea_sem_destroy(unaTareaSem);
             return false;
         case SEM_DESTROY:
@@ -556,13 +556,13 @@ static bool __realizar_tarea(t_buffer* buffer, uint32_t opCodeTarea, t_pcb* pcb)
                 log_error(kernelLogger, "SEM_DESTROY <Carpincho %d>: Semáforo %s no encontrado", pcb_get_pid(pcb), tarea_sem_get_nombre(unaTareaSem));
             }
 
-            stream_send_empty_buffer(OK_CONTINUE, socket);
+            stream_send_empty_buffer(socket, OK_CONTINUE);
             tarea_sem_destroy(unaTareaSem);
             return false;
         case CALL_IO:
             unaTareaCallIO = __buffer_unpack_tarea_call_io(buffer);
             __encolar_pcb_a_dispositivo_io(pcb, unaTareaCallIO);
-            stream_send_empty_buffer(OK_CONTINUE, socket);
+            stream_send_empty_buffer(socket, OK_CONTINUE);
             tarea_call_IO_destroy(unaTareaCallIO);
             return true;
         case MEM_ALLOC:
@@ -595,7 +595,7 @@ static void __atender_peticiones_del_carpincho(t_pcb* pcb) {
     time_t end;
     time(&start);
     while (!peticionBloqueante) {
-        stream_send_empty_buffer(OK_CONTINUE, socket);
+        stream_send_empty_buffer(socket, OK_CONTINUE);
 
         uint32_t opCodeTarea = stream_recv_op_code(socket);
 

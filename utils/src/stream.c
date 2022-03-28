@@ -30,7 +30,7 @@ void stream_send_buffer(int toSocket, uint32_t opCodeTarea, t_buffer* buffer) {
 
 void stream_send_empty_buffer(int toSocket, uint32_t opCode) {
     t_buffer* emptyBuffer = buffer_create();
-    stream_send_buffer(emptyBuffer, opCode, toSocket);
+    stream_send_buffer(toSocket, opCode, emptyBuffer);
     buffer_destroy(emptyBuffer);
 }
 

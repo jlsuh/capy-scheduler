@@ -50,10 +50,10 @@ int main(int argc, char* argv[]) {
         stream_recv_empty_buffer(memSocket);
 
         if (MEMORIA == response) {
-            stream_send_empty_buffer(OK_CONTINUE, memSocket);
+            stream_send_empty_buffer(memSocket, OK_CONTINUE);
             log_info(kernelLogger, "Kernel: Memoria establece conexión con Kernel en socket ID %d", memSocket);
         } else {
-            stream_send_empty_buffer(FAIL, memSocket); /* Es entidad conectante pero no es Memoria */
+            stream_send_empty_buffer(memSocket, FAIL); /* Es entidad conectante pero no es Memoria */
             log_error(kernelLogger, "Kernel: Error al intentar establecer conexión con Módulo Memoria");
             liberar_modulo_kernel(kernelLogger, kernelCfg);
             exit(0);

@@ -47,7 +47,7 @@ void test_es_posible_establecer_una_conexion(void) {
 void test_es_posible_serializar_un_string_enviarlo_y_deserializarlo(void) {
     t_buffer* senderBuffer = buffer_create();
     buffer_pack_string(senderBuffer, testString);
-    stream_send_buffer(senderBuffer, 0, sockClienteDelServ);
+    stream_send_buffer(sockClienteDelServ, 0, senderBuffer);
     buffer_destroy(senderBuffer);
 
     t_buffer* recvdBuffer = buffer_create();
