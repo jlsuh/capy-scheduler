@@ -403,7 +403,7 @@ int mate_memwrite(mate_instance* libRef, void* origin, mate_pointer dest, int si
         resultado = 1;
         log_info(mateInner->mateLogger, "Carpincho %d: Escritura de %d Bytes en memoria de dirección lógica %d exitosa", mateInner->pid, size, dest);
     } else {
-        log_error(mateInner->mateLogger, "Carpincho %d: Denegación de escritura en dirección lógica %d", mateInner->pid, size, dest);
+        log_error(mateInner->mateLogger, "Carpincho %d: Denegación de escritura en dirección lógica %d", mateInner->pid, dest);
         return MATE_WRITE_FAULT;
     }
 

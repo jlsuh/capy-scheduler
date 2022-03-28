@@ -321,7 +321,7 @@ static void __encolar_pcb_a_dispositivo_io(t_pcb* pcb, t_tarea_call_io* tareaCal
         log_info(kernelLogger, "Deadlock: Se libera el mutexDeadlock en línea %d", __LINE__);
 
         log_transition(nombreDispositivo, "EXEC", "BLOCKED", pcb_get_pid(pcb));
-        log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, tarea_call_io_get_mensaje(tareaCallIO), pcb_get_pid(pcb));
+        log_info(kernelLogger, "%s: Se recibe mensaje \"%s\" de Carpincho ID %d", nombreDispositivo, (char*)tarea_call_io_get_mensaje(tareaCallIO), pcb_get_pid(pcb));
         free(nombreDispositivo);
 
         pthread_mutex_t* mutex = recurso_io_get_mutex_cola_pcbs(recursoIO);
