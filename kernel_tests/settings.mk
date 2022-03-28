@@ -8,8 +8,8 @@ EXCLUDE=kernel.c
 LIBS=cunit utils commons pthread
 
 # Custom libraries' paths
-SHARED_LIBPATHS=
-STATIC_LIBPATHS=../utils
+SHARED_LIBPATHS=../utils
+STATIC_LIBPATHS=
 
 # Compiler flags
 CDEBUG=-g -Wall -DDEBUG

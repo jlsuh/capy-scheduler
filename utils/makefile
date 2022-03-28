@@ -2,10 +2,10 @@ include settings.mk
 
 ################################################################################
 
-filename = lib$(1).a
+filename = lib$(1).so
 
 define compile_bin
-	ar rcs -o "$@" $^
+	gcc $(CFLAGS) -shared -o "$@" $^ $(LIBDIRS:%=-L%) $(LIBS:%=-l%)
 endef
 
 define compile_objs
@@ -15,3 +15,7 @@ endef
 ################################################################################
 
 include ../compilation.mk
+
+################################################################################
+
+include ../installation.mk
